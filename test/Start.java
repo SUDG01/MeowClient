@@ -6,6 +6,8 @@ public class Start
 {
     public static void main(String[] args)
     {
+        // 防止皮肤/Cape下载线程耗尽本地端口
+        System.setProperty("http.keepAlive", "false");
         Main.main(concat(new String[] {"--version", "mcp", "--accessToken", "0", "--assetsDir", "assets", "--assetIndex", "1.8", "--userProperties", "{}"}, args));
     }
 

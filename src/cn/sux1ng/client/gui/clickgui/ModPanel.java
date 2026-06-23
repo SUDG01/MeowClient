@@ -71,7 +71,7 @@ public class ModPanel {
         expandAnim.run(extended ? 1.0 : 0.0);
         double expandProgress = expandAnim.getValue();
 
-        if ((extended || expandAnim.isRunning()) && !mod.getValues().isEmpty()) {
+        if (extended && !mod.getValues().isEmpty()) {
             int settingsY = y + height;
             int settingBgColor = 0xFF202020;
 

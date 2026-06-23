@@ -25,9 +25,12 @@ public class Animation {
 
     /**
      * 启动动画，从当前值过渡到目标值
+     * 如果目标值没变且动画已完成，不做任何事（防止每帧调用导致动画永远不结束）
      */
     public void run(double target) {
-        this.from = getValue();  // 从当前渲染值开始，避免跳变
+        if (!running && this.to == target) return; // 已完成且目标相同，跳过
+        if (running && this.to == target) return;  // 正在往这个目标动画中，跳过
+        this.from = getValue();
         this.to = target;
         this.startTime = System.currentTimeMillis();
         this.running = true;
