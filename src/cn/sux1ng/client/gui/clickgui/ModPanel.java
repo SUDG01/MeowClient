@@ -6,12 +6,7 @@ import cn.sux1ng.client.mod.mods.draw.ClickGUIMod;
 import cn.sux1ng.client.util.DrawUtil;
 import cn.sux1ng.client.util.animation.Animation;
 import cn.sux1ng.client.util.animation.Easing;
-import cn.sux1ng.client.value.BooleanValue;
-import cn.sux1ng.client.value.ColorValue;
-import cn.sux1ng.client.value.ModeValue;
-import cn.sux1ng.client.value.NumberValue;
-import cn.sux1ng.client.value.TextValue;
-import cn.sux1ng.client.value.Value;
+import cn.sux1ng.client.value.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import org.lwjgl.input.Keyboard;
@@ -29,7 +24,6 @@ public class ModPanel {
     public boolean extended = false;
     private boolean binding = false;
 
-    // 动画
     private final Animation hoverAnim = new Animation(Easing.EASE_OUT_CUBIC, 200);
     private final Animation expandAnim = new Animation(Easing.EASE_IN_OUT_CUBIC, 250);
 
@@ -39,129 +33,98 @@ public class ModPanel {
 
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         boolean hovered = isHovered(mouseX, mouseY, x, y, width, height);
-
-        // hover 动画
         hoverAnim.run(hovered ? 1.0 : 0.0);
-        double hoverProgress = hoverAnim.getValue();
+        double hp = hoverAnim.getValue();
 
-        // 背景色
-        int bgColor;
-        if (mod.isEnable()) {
-            bgColor = 0xFFFFB7B2;
-        } else {
-            int baseAlpha = 112; // 0x70
-            int hoverAlpha = (int) (baseAlpha + 30 * hoverProgress);
-            bgColor = (hoverAlpha << 24) | 0x000000;
-        }
-
-        // 圆角按钮
+        int bgColor = mod.isEnable() ? 0xFFFFB7B2 : ((112 + (int)(30 * hp)) << 24);
         DrawUtil.drawRoundedRect(x + 1, y, width - 2, height, 4, bgColor);
 
-        // 文字
         FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
         int textColor = mod.isEnable() ? 0xFFFFFFFF : 0xFFCCCCCC;
         String text = binding ? "Press Key..." : mod.getName();
         if (mod.getKey() != 0 && !binding) text += " [" + Keyboard.getKeyName(mod.getKey()) + "]";
-
         fr.drawStringWithShadow(text, x + (width / 2f - fr.getStringWidth(text) / 2f),
                 y + (height / 2f - fr.FONT_HEIGHT / 2f), textColor);
 
-        // 设置区域
         finalHeight = height;
         expandAnim.run(extended ? 1.0 : 0.0);
-        double expandProgress = expandAnim.getValue();
 
         if (extended && !mod.getValues().isEmpty()) {
-            int settingsY = y + height;
-            int settingBgColor = 0xFF202020;
-
+            int sy = y + height;
             for (Value<?> value : mod.getValues()) {
                 if (!value.isVisible()) continue;
+                sy = renderSingleValue(value, sy, fr, mouseX, mouseY);
+            }
+            finalHeight = sy - y;
+        }
+    }
 
-                int settingHeight = 15;
-                DrawUtil.drawRect(x, settingsY, width, settingHeight, settingBgColor);
+    private int renderSingleValue(Value<?> value, int sy, FontRenderer fr, int mx, int my) {
+        int bg = 0xFF202020;
+        int sh = 15;
 
-                // --- NumberValue (slider) ---
-                if (value instanceof NumberValue) {
-                    NumberValue num = (NumberValue) value;
-                    double current = num.getValue();
-                    double min = num.getMin();
-                    double max = num.getMax();
-                    double targetWidth = (width - 8) * (current - min) / (max - min);
+        // --- ValueGroup ---
+        if (value instanceof ValueGroup) {
+            ValueGroup g = (ValueGroup) value;
+            DrawUtil.drawRect(x, sy, width, 12, 0xFF2A2A2A);
+            fr.drawStringWithShadow("§l" + g.getName(), x + 4, sy + 2, 0xFFFFFF88);
+            sy += 12;
+            for (Value<?> child : g.getChildren()) {
+                if (!child.isVisible()) continue;
+                sy = renderSingleValue(child, sy, fr, mx, my);
+            }
+            return sy;
+        }
 
-                    // 平滑滑动条渲染
-                    double renderWidth = targetWidth;
-                    // renderWidth 平滑: (current * 3 + target) / 4
-                    // 保存上次的 renderWidth（简单用字段不好做，此处每次按比例平滑）
-                    // 简化实现：直接用 target（视觉效果依然比之前好）
+        DrawUtil.drawRect(x, sy, width, sh, bg);
 
-                    // 槽
-                    DrawUtil.drawRoundedRect(x + 4, settingsY + settingHeight - 5, width - 8, 2, 1, 0xFF404040);
-                    // 填充
-                    DrawUtil.drawRoundedRect(x + 4, settingsY + settingHeight - 5, (int) renderWidth, 2, 1, 0xFFFFB7B2);
-                    // 圆头滑块
-                    DrawUtil.drawCircle(x + 4 + renderWidth, settingsY + settingHeight - 4, 3, 0xFFFFFFFF);
-
-                    fr.drawStringWithShadow(num.getName() + ": " + num.getValue(), x + 4, settingsY + 2, 0xFFFFFFFF);
-
-                    if (Mouse.isButtonDown(0) && isHovered(mouseX, mouseY, x, settingsY, width, settingHeight)) {
-                        double percent = (mouseX - (x + 4)) / (double)(width - 8);
-                        double val = min + (max - min) * percent;
-                        val = Math.max(min, Math.min(max, val));
-                        BigDecimal bd = new BigDecimal(val);
-                        val = bd.setScale(1, RoundingMode.HALF_UP).doubleValue();
-                        num.setValue(val);
-                    }
-                }
-
-                // --- BooleanValue (toggle switch) ---
-                else if (value instanceof BooleanValue) {
-                    BooleanValue bool = (BooleanValue) value;
-                    fr.drawStringWithShadow(bool.getName(), x + 4, settingsY + 4, 0xFFFFFFFF);
-
-                    // 小圆角开关: 20x10 底 + 8x8 圆形滑块
-                    int switchX = x + width - 24;
-                    int switchY = settingsY + 3;
-                    int switchBg = bool.getValue() ? 0xFFFFB7B2 : 0xFF555555;
-                    DrawUtil.drawRoundedRect(switchX, switchY, 20, 10, 5, switchBg);
-
-                    int dotX = bool.getValue() ? switchX + 11 : switchX + 2;
-                    DrawUtil.drawCircle(dotX + 4, switchY + 5, 4, 0xFFFFFFFF);
-                }
-
-                // --- ModeValue ---
-                else if (value instanceof ModeValue) {
-                    ModeValue mode = (ModeValue) value;
-                    fr.drawStringWithShadow(mode.getName(), x + 4, settingsY + 4, 0xFFFFFFFF);
-                    String modeText = mode.getValue();
-                    fr.drawStringWithShadow(modeText, x + width - fr.getStringWidth(modeText) - 5, settingsY + 4, 0xFFFFFF00);
-                }
-
-                // --- ColorValue ---
-                else if (value instanceof ColorValue) {
-                    ColorValue colorVal = (ColorValue) value;
-                    fr.drawStringWithShadow(colorVal.getName(), x + 4, settingsY + 4, 0xFFFFFFFF);
-                    int cbX = x + width - 16;
-                    int cbY = settingsY + 2;
-                    DrawUtil.drawRoundedRect(cbX, cbY, 12, 10, 2, colorVal.getRGB());
-                    // 白色细边框（四边画线）
-                    DrawUtil.drawRect(cbX - 1, cbY - 1, 14, 1, 0xFFFFFFFF);
-                    DrawUtil.drawRect(cbX - 1, cbY + 10, 14, 1, 0xFFFFFFFF);
-                    DrawUtil.drawRect(cbX - 1, cbY - 1, 1, 12, 0xFFFFFFFF);
-                    DrawUtil.drawRect(cbX + 12, cbY - 1, 1, 12, 0xFFFFFFFF);
-                }
-
-                // --- TextValue ---
-                else if (value instanceof TextValue) {
-                    TextValue textVal = (TextValue) value;
-                    String display = textVal.getName() + ": §7" + textVal.getValue();
-                    fr.drawStringWithShadow(display, x + 4, settingsY + 4, 0xFFFFFFAA);
-                }
-
-                settingsY += settingHeight;
-                finalHeight += settingHeight;
+        // --- NumberValue ---
+        if (value instanceof NumberValue) {
+            NumberValue num = (NumberValue) value;
+            double cur = num.getValue();
+            double tw = (width - 8) * (cur - num.getMin()) / (num.getMax() - num.getMin());
+            DrawUtil.drawRoundedRect(x + 4, sy + sh - 5, width - 8, 2, 1, 0xFF404040);
+            DrawUtil.drawRoundedRect(x + 4, sy + sh - 5, (int) tw, 2, 1, 0xFFFFB7B2);
+            DrawUtil.drawCircle(x + 4 + tw, sy + sh - 4, 3, 0xFFFFFFFF);
+            fr.drawStringWithShadow(num.getName() + ": " + num.getValue(), x + 4, sy + 2, 0xFFFFFFFF);
+            if (Mouse.isButtonDown(0) && isHovered(mx, my, x, sy, width, sh)) {
+                double pct = (mx - (x + 4)) / (double)(width - 8);
+                double val = num.getMin() + (num.getMax() - num.getMin()) * Math.max(0, Math.min(1, pct));
+                num.setValue(new BigDecimal(val).setScale(1, RoundingMode.HALF_UP).doubleValue());
             }
         }
+        // --- BooleanValue ---
+        else if (value instanceof BooleanValue) {
+            BooleanValue bool = (BooleanValue) value;
+            fr.drawStringWithShadow(bool.getName(), x + 4, sy + 4, 0xFFFFFFFF);
+            int swX = x + width - 24, swY = sy + 3;
+            DrawUtil.drawRoundedRect(swX, swY, 20, 10, 5, bool.getValue() ? 0xFFFFB7B2 : 0xFF555555);
+            DrawUtil.drawCircle(bool.getValue() ? swX + 15 : swX + 5, swY + 5, 4, 0xFFFFFFFF);
+        }
+        // --- ModeValue ---
+        else if (value instanceof ModeValue) {
+            ModeValue mode = (ModeValue) value;
+            fr.drawStringWithShadow(mode.getName(), x + 4, sy + 4, 0xFFFFFFFF);
+            String mt = mode.getValue();
+            fr.drawStringWithShadow(mt, x + width - fr.getStringWidth(mt) - 5, sy + 4, 0xFFFFFF00);
+        }
+        // --- ColorValue ---
+        else if (value instanceof ColorValue) {
+            ColorValue cv = (ColorValue) value;
+            fr.drawStringWithShadow(cv.getName(), x + 4, sy + 4, 0xFFFFFFFF);
+            int cbX = x + width - 16;
+            DrawUtil.drawRoundedRect(cbX, sy + 2, 12, 10, 2, cv.getRGB());
+            DrawUtil.drawRect(cbX - 1, sy + 1, 14, 1, 0xFFFFFFFF);
+            DrawUtil.drawRect(cbX - 1, sy + 11, 14, 1, 0xFFFFFFFF);
+            DrawUtil.drawRect(cbX - 1, sy + 1, 1, 12, 0xFFFFFFFF);
+            DrawUtil.drawRect(cbX + 12, sy + 1, 1, 12, 0xFFFFFFFF);
+        }
+        // --- TextValue ---
+        else if (value instanceof TextValue) {
+            TextValue tv = (TextValue) value;
+            fr.drawStringWithShadow(tv.getName() + ": §7" + tv.getValue(), x + 4, sy + 4, 0xFFFFFFAA);
+        }
+        return sy + sh;
     }
 
     public void mouseClicked(int mouseX, int mouseY, int mouseButton) {
@@ -181,47 +144,55 @@ public class ModPanel {
             return;
         }
         if (this.extended && !mod.getValues().isEmpty()) {
-            int settingsY = y + height;
+            int sy = y + height;
             for (Value<?> value : mod.getValues()) {
                 if (!value.isVisible()) continue;
-                int settingHeight = 15;
-                if (isHovered(mouseX, mouseY, x, settingsY, width, settingHeight)) {
-                    if (value instanceof BooleanValue && mouseButton == 0) {
-                        BooleanValue bool = (BooleanValue) value;
-                        bool.setValue(!bool.getValue());
-                        Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
-                    } else if (value instanceof ModeValue && mouseButton == 0) {
-                        ModeValue mode = (ModeValue) value;
-                        mode.cycle();
-                        Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
-                    } else if (value instanceof ColorValue && mouseButton == 0) {
-                        ColorValue colorVal = (ColorValue) value;
-                        float nextHue = (colorVal.getHue() + 0.05f) % 1.0f;
-                        colorVal.setHue(nextHue);
-                        Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
-                    } else if (value instanceof ColorValue && mouseButton == 1) {
-                        ColorValue colorVal = (ColorValue) value;
-                        float nextSat = colorVal.getSaturation() >= 0.9f ? 0.3f : colorVal.getSaturation() + 0.2f;
-                        colorVal.setSaturation(nextSat);
-                        Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
+                if (value instanceof ValueGroup) {
+                    ValueGroup g = (ValueGroup) value;
+                    sy += 12;
+                    for (Value<?> child : g.getChildren()) {
+                        if (!child.isVisible()) continue;
+                        sy = handleValueClick(child, sy, mouseX, mouseY, mouseButton);
                     }
+                    continue;
                 }
-                settingsY += settingHeight;
+                sy = handleValueClick(value, sy, mouseX, mouseY, mouseButton);
             }
         }
     }
 
+    private int handleValueClick(Value<?> value, int sy, int mx, int my, int mb) {
+        int sh = 15;
+        if (isHovered(mx, my, x, sy, width, sh)) {
+            if (value instanceof BooleanValue && mb == 0) {
+                ((BooleanValue) value).setValue(!((BooleanValue) value).getValue());
+                Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
+            } else if (value instanceof ModeValue && mb == 0) {
+                ((ModeValue) value).cycle();
+                Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
+            } else if (value instanceof ColorValue && mb == 0) {
+                ColorValue cv = (ColorValue) value;
+                cv.setHue((cv.getHue() + 0.05f) % 1.0f);
+                Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
+            } else if (value instanceof ColorValue && mb == 1) {
+                ColorValue cv = (ColorValue) value;
+                cv.setSaturation(cv.getSaturation() >= 0.9f ? 0.3f : cv.getSaturation() + 0.2f);
+                Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
+            }
+        }
+        return sy + sh;
+    }
+
     public void keyTyped(char typedChar, int keyCode) {
         if (this.binding) {
-            if (keyCode == Keyboard.KEY_ESCAPE || keyCode == Keyboard.KEY_DELETE) mod.setKey(0);
-            else mod.setKey(keyCode);
+            mod.setKey(keyCode == Keyboard.KEY_ESCAPE || keyCode == Keyboard.KEY_DELETE ? 0 : keyCode);
             this.binding = false;
         }
     }
 
     public void mouseReleased(int mouseX, int mouseY, int state) {}
 
-    private boolean isHovered(int mouseX, int mouseY, int x, int y, int width, int height) {
-        return mouseX >= x && mouseY >= y && mouseX < x + width && mouseY < y + height;
+    private boolean isHovered(int mx, int my, int rx, int ry, int rw, int rh) {
+        return mx >= rx && my >= ry && mx < rx + rw && my < ry + rh;
     }
 }

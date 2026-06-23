@@ -16,28 +16,52 @@ import java.util.List;
 public class Mod {
     protected final Minecraft mc = Minecraft.getMinecraft();
 
+    // 按键绑定模式
+    public enum BindMode { TOGGLE, HOLD, SMART }
+
     private final String name;
     private final Category category;
-
     private boolean enable;
-
     private int key;
+    private BindMode bindMode = BindMode.TOGGLE;
+    private boolean smartHolding = false;  // SMART 模式下的长按状态
 
     public Mod(String name, Category category) {
         this.name = name;
         this.category = category;
     }
 
-    // 动态后缀（显示在 ArrayList 中，如 "KillAura [Switch]")
+    // ================== 后缀 / Tag ==================
+
     private String suffix;
+    private Value<?> tagSource;  // 自动 tag 来源
 
     public String getSuffix() {
+        // tagBy 关联的值优先
+        if (tagSource != null && tagSource.getValue() != null) {
+            return tagSource.getValue().toString();
+        }
         return suffix;
     }
 
     public void setSuffix(String suffix) {
         this.suffix = suffix;
     }
+
+    /**
+     * 关联一个 Value 作为自动 tag
+     * 比如 KillAura.tagBy(targetMode) → ArrayList 里显示 "KillAura [Switch]"
+     */
+    public void tagBy(Value<?> source) {
+        this.tagSource = source;
+    }
+
+    // ================== 绑定模式 ==================
+
+    public BindMode getBindMode() { return bindMode; }
+    public void setBindMode(BindMode mode) { this.bindMode = mode; }
+    public boolean isSmartHolding() { return smartHolding; }
+    public void setSmartHolding(boolean h) { this.smartHolding = h; }
 
     public List<Value> values = new ArrayList<>();
 
