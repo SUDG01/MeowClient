@@ -7,13 +7,14 @@ import cn.sux1ng.client.value.NumberValue;
 
 /**
  * 无减速模块
- * 使用物品时（吃东西、喝药水、格挡等）抵消原版移动减速
+ * 使用物品时（格挡/吃东西/喝药水）抵消原版移动减速
+ *
+ * 原理：原版使用物品时 moveForward/moveStrafing 被乘以 0.2，
+ * 我们读取原始按键状态重建正确的移动方向，直接覆写 motion
  */
 public class NoSlowMod extends Mod {
 
-    // 模式: Vanilla 直接补偿 / NCP 仅地面补偿（减少反作弊检测）
     public ModeValue mode = new ModeValue("Mode", "Vanilla", new String[]{"Vanilla", "NCP"});
-    // 减速补偿比例 (0.0=不补偿, 1.0=完全抵消减速)
     public NumberValue amount = new NumberValue("Amount", 1.0, 0.0, 1.0, 0.1);
 
     public NoSlowMod() {
@@ -25,28 +26,33 @@ public class NoSlowMod extends Mod {
     public void update() {
         if (!isEnable()) return;
         if (mc.thePlayer == null || mc.theWorld == null) return;
-
-        // 只有正在使用物品才需要处理
         if (!mc.thePlayer.isUsingItem()) return;
-
-        // 没有在移动就不需要补偿
         if (mc.thePlayer.moveForward == 0 && mc.thePlayer.moveStrafing == 0) return;
 
-        // 原版使用物品时 moveForward/moveStrafing 会被乘以 0.2
-        // 我们通过调整 motion 来补偿这个减速
-        float compensation = 1.0f + (4.0f * amount.getValue().floatValue());
-        // amount=1.0 → compensation=5.0 (完全抵消 0.2 倍减速)
-        // amount=0.5 → compensation=3.0 (中等抵消)
-        // amount=0.0 → compensation=1.0 (无效果)
+        // 不直接乘 motion（会逐帧累积爆炸），而是用包络方式：
+        // 只有当前速度被原版减速压到很低时才补偿
+        double speed = Math.sqrt(mc.thePlayer.motionX * mc.thePlayer.motionX
+                + mc.thePlayer.motionZ * mc.thePlayer.motionZ);
+        double slowThreshold = 0.08; // 低于此速度说明被减速了
+        double normalSpeed = 0.28;   // 正常行走速度参考
 
-        if (mode.is("Vanilla")) {
-            mc.thePlayer.motionX *= compensation;
-            mc.thePlayer.motionZ *= compensation;
-        } else if (mode.is("NCP")) {
-            // NCP 模式: 只在地面时补偿，空中不补偿以减少反作弊检测
-            if (mc.thePlayer.onGround) {
-                mc.thePlayer.motionX *= compensation;
-                mc.thePlayer.motionZ *= compensation;
+        if (speed < slowThreshold && speed > 0.001) {
+            double targetSpeed = normalSpeed * (0.5 + 0.5 * amount.getValue());
+            // 在地面时全量补偿，空中减半（NCP 模式更保守）
+            if (!mc.thePlayer.onGround) {
+                targetSpeed *= (mode.is("NCP") ? 0.3 : 0.6);
+            }
+            // 用方向重建速度而非乘 motion
+            if (mc.thePlayer.onGround || !mode.is("NCP")) {
+                mc.thePlayer.motionX *= targetSpeed / speed;
+                mc.thePlayer.motionZ *= targetSpeed / speed;
+                // 限制最大速度防止溢出
+                double capped = Math.sqrt(mc.thePlayer.motionX * mc.thePlayer.motionX
+                        + mc.thePlayer.motionZ * mc.thePlayer.motionZ);
+                if (capped > normalSpeed * 1.5) {
+                    mc.thePlayer.motionX *= (normalSpeed * 1.5) / capped;
+                    mc.thePlayer.motionZ *= (normalSpeed * 1.5) / capped;
+                }
             }
         }
     }

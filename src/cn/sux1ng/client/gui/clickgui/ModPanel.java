@@ -144,7 +144,11 @@ public class ModPanel {
                     int cbX = x + width - 16;
                     int cbY = settingsY + 2;
                     DrawUtil.drawRoundedRect(cbX, cbY, 12, 10, 2, colorVal.getRGB());
-                    DrawUtil.drawRoundedOutline(cbX, cbY, 12, 10, 2, 1, 0xFFFFFFFF);
+                    // 白色细边框（四边画线）
+                    DrawUtil.drawRect(cbX - 1, cbY - 1, 14, 1, 0xFFFFFFFF);
+                    DrawUtil.drawRect(cbX - 1, cbY + 10, 14, 1, 0xFFFFFFFF);
+                    DrawUtil.drawRect(cbX - 1, cbY - 1, 1, 12, 0xFFFFFFFF);
+                    DrawUtil.drawRect(cbX + 12, cbY - 1, 1, 12, 0xFFFFFFFF);
                 }
 
                 // --- TextValue ---
