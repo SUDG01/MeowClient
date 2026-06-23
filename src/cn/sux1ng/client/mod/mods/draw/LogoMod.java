@@ -24,7 +24,7 @@ public class LogoMod extends Mod {
     public ModeValue mode = new ModeValue("Mode", "Normal", new String[]{"Normal", "Sense", "CSGO(Gamesense)", "Simple"});
 
     public LogoMod() {
-        super("Logo", Category.DRAW);
+        super("Logo", Category.HUD);
         addValues(x, y, mode);
     }
 

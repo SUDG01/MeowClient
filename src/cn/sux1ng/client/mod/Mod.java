@@ -1,9 +1,13 @@
 package cn.sux1ng.client.mod;
 
+import cn.sux1ng.client.events.EventManager;
+import cn.sux1ng.client.events.impl.MotionEvent;
+import cn.sux1ng.client.events.impl.MoveEvent;
+import cn.sux1ng.client.events.impl.PacketReceiveEvent;
+import cn.sux1ng.client.events.impl.PacketSendEvent;
+import cn.sux1ng.client.events.impl.StrafeEvent;
 import cn.sux1ng.client.ui.notification.NotificationType;
 import cn.sux1ng.client.value.Value;
-// 1. 记得导入我们的事件管理器！
-import cn.sux1ng.client.events.EventManager;
 import net.minecraft.client.Minecraft;
 
 import java.util.ArrayList;
@@ -22,6 +26,17 @@ public class Mod {
     public Mod(String name, Category category) {
         this.name = name;
         this.category = category;
+    }
+
+    // 动态后缀（显示在 ArrayList 中，如 "KillAura [Switch]")
+    private String suffix;
+
+    public String getSuffix() {
+        return suffix;
+    }
+
+    public void setSuffix(String suffix) {
+        this.suffix = suffix;
     }
 
     public List<Value> values = new ArrayList<>();
@@ -101,4 +116,12 @@ public class Mod {
     public void key(int key){
 
     }
+
+    // ================== 事件回调（模块可覆写） ==================
+    public void onPreMotion(MotionEvent e) {}
+    public void onPostMotion(MotionEvent e) {}
+    public void onPacketSend(PacketSendEvent e) {}
+    public void onPacketReceive(PacketReceiveEvent e) {}
+    public void onMove(MoveEvent e) {}
+    public void onStrafe(StrafeEvent e) {}
 }

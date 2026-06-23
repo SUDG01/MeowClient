@@ -24,7 +24,7 @@ public class AutoGGMod extends Mod {
     public BooleanValue autoSend = new BooleanValue("AutoSend", true);
 
     public AutoGGMod() {
-        super("AutoGG", Category.WORLD);
+        super("AutoGG", Category.MISC);
         addValues(msgMode, customMsg, autoSend);
     }
 

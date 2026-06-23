@@ -26,7 +26,7 @@ public class AnimationsMod extends Mod {
     private float prevAnimationProgress = 0.0f;
 
     public AnimationsMod() {
-        super("Animations", Category.RENDER);
+        super("Animations", Category.PLAYER);
         addValues(mode, x, y, z, scale);
     }
 

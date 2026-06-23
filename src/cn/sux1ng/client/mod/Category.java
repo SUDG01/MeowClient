@@ -1,5 +1,5 @@
 package cn.sux1ng.client.mod;
 
 public enum Category {
-    COMBAT,RENDER,MOVEMENT,DRAW,WORLD
+    COMBAT, MOVEMENT, PLAYER, RENDER, MISC, WORLD, HUD, DRAW
 }

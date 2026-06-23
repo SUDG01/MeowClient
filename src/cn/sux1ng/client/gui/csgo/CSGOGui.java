@@ -28,6 +28,8 @@ public class CSGOGui extends GuiScreen {
     private Mod currentMod = null;
     private boolean dragging = false;
     private int dragX, dragY;
+    private String searchText = "";
+    private boolean typingSearch = false;
 
     // ========== 主题颜色 ==========
 
@@ -100,12 +102,23 @@ public class CSGOGui extends GuiScreen {
             catY += 25;
         }
 
-        // 3. 模块列表
+        // 3. 搜索框
+        int searchY = y + 15;
+        DrawUtil.drawRoundedRect(x + sidebarWidth + 5, searchY - 4, moduleListWidth - 10, 14, 3, BG);
+        String searchDisplay = searchText.isEmpty() ? "§7Search..." : "§f" + searchText;
+        fontRendererObj.drawString(searchDisplay, x + sidebarWidth + 10, searchY - 3,
+                searchText.isEmpty() ? TEXT_DIS : TEXT);
+
+        // 4. 模块列表（按搜索过滤）
         List<Mod> mods = MeowClient.modManager.getByCategory(currentCategory);
         int modX = x + sidebarWidth + 10;
-        int modY = y + 15;
+        int modY = searchY + 16;
         if (mods != null) {
             for (Mod mod : mods) {
+                // 搜索过滤
+                if (!searchText.isEmpty() && !mod.getName().toLowerCase().contains(searchText.toLowerCase())) {
+                    continue;
+                }
                 if (mod == currentMod) {
                     int hlColor = ClickGUIMod.theme.is("Light") ? new Color(255, 255, 255, 80).getRGB() : new Color(42, 42, 42, 100).getRGB();
                     DrawUtil.drawRoundedRect(x + sidebarWidth + 5, modY - 4, moduleListWidth - 10, 16, 3, hlColor);
@@ -193,11 +206,20 @@ public class CSGOGui extends GuiScreen {
             }
             catY += 25;
         }
+        // 搜索框点击
+        if (mouseX >= x + sidebarWidth + 5 && mouseX <= x + sidebarWidth + moduleListWidth - 5
+                && mouseY >= y + 11 && mouseY <= y + 29) {
+            typingSearch = true; return;
+        }
+        typingSearch = false;
         List<Mod> mods = MeowClient.modManager.getByCategory(currentCategory);
         int modX = x + sidebarWidth + 10;
-        int modY = y + 15;
+        int modY = y + 33;  // offset for search box
         if (mods != null) {
             for (Mod mod : mods) {
+                if (!searchText.isEmpty() && !mod.getName().toLowerCase().contains(searchText.toLowerCase())) {
+                    continue;
+                }
                 if (mouseX >= modX && mouseX <= modX + moduleListWidth - 20 && mouseY >= modY - 4 && mouseY <= modY + 12) {
                     if (mouseButton == 0) mod.setEnable(!mod.isEnable());
                     else if (mouseButton == 1) currentMod = mod;
@@ -228,6 +250,24 @@ public class CSGOGui extends GuiScreen {
 
     @Override
     public void mouseReleased(int mouseX, int mouseY, int state) { dragging = false; }
+
+    @Override
+    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+        if (typingSearch && typedChar != 0) {
+            if (keyCode == org.lwjgl.input.Keyboard.KEY_BACK || keyCode == org.lwjgl.input.Keyboard.KEY_DELETE) {
+                if (!searchText.isEmpty()) {
+                    searchText = searchText.substring(0, searchText.length() - 1);
+                }
+            } else if (keyCode == org.lwjgl.input.Keyboard.KEY_ESCAPE) {
+                searchText = "";
+                typingSearch = false;
+            } else if (typedChar >= 32 && typedChar < 127) {
+                searchText += typedChar;
+            }
+        }
+        super.keyTyped(typedChar, keyCode);
+    }
+
     @Override
     public boolean doesGuiPauseGame() { return false; }
 }

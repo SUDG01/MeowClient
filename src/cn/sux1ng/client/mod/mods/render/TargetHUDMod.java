@@ -24,7 +24,7 @@ public class TargetHUDMod extends Mod {
     private double hpWidth = 0;
 
     public TargetHUDMod() {
-        super("TargetHUD", Category.RENDER);
+        super("TargetHUD", Category.HUD);
         addValues(x, y, style);
     }
 
@@ -102,12 +102,16 @@ public class TargetHUDMod extends Mod {
 
     private int getHealthColor(float health, float maxHealth) {
         float p = health / maxHealth;
-        if (p > 0.5f) {
-            float f = (p - 0.5f) * 2;
-            return new Color((int)((1-f)*255), 255, 0).getRGB();
+        // 4段渐变: 绿→黄绿→橙→红
+        if (p > 0.66f) {
+            float f = (p - 0.66f) / 0.34f;
+            return new Color((int)((1-f)*170), 255, 0).getRGB();        // 黄绿(170,255,0) → 绿(0,255,0)
+        } else if (p > 0.33f) {
+            float f = (p - 0.33f) / 0.33f;
+            return new Color(255, (int)(170*f + 255*(1-f)), 0).getRGB(); // 橙(255,170,0) → 黄绿(170,255,0)
         } else {
-            float f = p * 2;
-            return new Color(255, (int)(f*255), 0).getRGB();
+            float f = p / 0.33f;
+            return new Color(255, (int)(170*f), 0).getRGB();             // 红(255,0,0) → 橙(255,170,0)
         }
     }
 }

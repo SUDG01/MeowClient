@@ -30,7 +30,7 @@ public class ArrayListMod extends Mod {
             .setVisibility(() -> colorMode.is("Static") || colorMode.is("Pulse"));
 
     public ArrayListMod() {
-        super("ArrayList", Category.DRAW);
+        super("ArrayList", Category.HUD);
         addValues(colorMode, background, sidebar, staticColor);
         setEnable(true);
     }
@@ -97,6 +97,10 @@ public class ArrayListMod extends Mod {
     }
 
     private String getDisplayName(Mod mod) {
+        String suffix = mod.getSuffix();
+        if (suffix != null && !suffix.isEmpty()) {
+            return mod.getName() + " §7" + suffix;
+        }
         return mod.getName();
     }
 }

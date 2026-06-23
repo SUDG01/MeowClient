@@ -32,7 +32,7 @@ public class InfoHUDMod extends Mod {
     public BooleanValue showBackground = new BooleanValue("Background", false);
 
     public InfoHUDMod() {
-        super("InfoHUD", Category.DRAW);
+        super("InfoHUD", Category.HUD);
         addValues(x, y, rainbow, staticColor, showFPS, showBPS, showXYZ, showBackground);
         setEnable(true);
     }

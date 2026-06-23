@@ -1,12 +1,12 @@
-package cn.sux1ng.client.ui.notification; // 记得改成你自己的包名
+package cn.sux1ng.client.ui.notification;
 
 import java.awt.Color;
 
 public enum NotificationType {
-    INFO(new Color(255, 255, 255), "I"),
-    WARNING(new Color(255, 255, 120), "W"),
-    ERROR(new Color(255, 80, 80), "E"),
-    SUCCESS(new Color(100, 255, 100), "S");
+    INFO(new Color(255, 255, 255), "ⓘ"),       // ⓘ
+    WARNING(new Color(255, 255, 120), "⚠"),     // ⚠
+    ERROR(new Color(255, 80, 80), "✗"),         // ✗
+    SUCCESS(new Color(100, 255, 100), "✓");     // ✓
 
     private final Color color;
     private final String icon;

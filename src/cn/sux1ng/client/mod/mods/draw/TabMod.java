@@ -26,7 +26,7 @@ public class TabMod extends Mod {
     private boolean mod = false;
 
     public TabMod() {
-        super("Tab", Category.DRAW);
+        super("Tab", Category.HUD);
         addValues(accentColor, bgColor, uiScale);
     }
 

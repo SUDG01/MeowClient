@@ -28,7 +28,7 @@ public class ArmorHUDMod extends Mod {
     public BooleanValue showHeldItem = new BooleanValue("ShowHeld", true);
 
     public ArmorHUDMod() {
-        super("ArmorHUD", Category.RENDER); // 也可以放在 DRAW 分类
+        super("ArmorHUD", Category.HUD);
         addValues(x, y, mode, showHeldItem);
     }
 

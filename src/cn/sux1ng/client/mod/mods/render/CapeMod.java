@@ -20,7 +20,7 @@ public class CapeMod extends Mod {
             .setVisibility(() -> capeStyle.is("Meow"));
 
     public CapeMod() {
-        super("CustomCape", Category.RENDER);
+        super("CustomCape", Category.PLAYER);
         addValues(capeStyle, optifine, capeColor);
     }
 
