@@ -1,8 +1,10 @@
 package cn.sux1ng.client.ui.notification;
 
+import cn.sux1ng.client.util.DrawUtil;
+import cn.sux1ng.client.util.animation.Animation;
+import cn.sux1ng.client.util.animation.Easing;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 
 import java.awt.Color;
@@ -14,11 +16,15 @@ public class Notification {
     private final long duration;
     private final long start;
 
-    // 动画相关的变量
-    private float x, y;
-    private float width, height;
+    private float y;
+    private float width;
+    private final float height = 32;
     private boolean isExiting = false;
     private final Minecraft mc = Minecraft.getMinecraft();
+
+    // 缓动动画
+    private final Animation slideAnim = new Animation(Easing.EASE_OUT_EXPO, 400);
+    private float animX;
 
     public Notification(String title, String description, NotificationType type, long duration) {
         this.title = title;
@@ -27,14 +33,10 @@ public class Notification {
         this.duration = duration;
         this.start = System.currentTimeMillis();
 
-        // 计算宽度：取标题和内容中较长的那个 + 一些边距
         FontRenderer fr = mc.fontRendererObj;
-        this.width = Math.max(fr.getStringWidth(title), fr.getStringWidth(description)) + 40;
-        this.height = 30;
-
-        // 初始位置设定在屏幕外右侧
+        this.width = Math.max(fr.getStringWidth(title), fr.getStringWidth(description)) + 50;
         ScaledResolution sr = new ScaledResolution(mc);
-        this.x = sr.getScaledWidth();
+        this.animX = sr.getScaledWidth();
     }
 
     public void render(float targetY) {
@@ -42,54 +44,65 @@ public class Notification {
         ScaledResolution sr = new ScaledResolution(mc);
         FontRenderer fr = mc.fontRendererObj;
 
-        // 1. 动画逻辑 (仿 Reversal 的 Lerp)
-        // 如果时间快到了，或者被标记为退出，目标 X 设为屏幕外
+        // 缓动动画
         float targetX;
         if (timeElapsed > duration) {
-            isExiting = true;
-            targetX = sr.getScaledWidth() + width + 10; // 移出屏幕
+            if (!isExiting) {
+                isExiting = true;
+                slideAnim.run(sr.getScaledWidth() + width + 10);
+            }
+            targetX = sr.getScaledWidth() + width + 10;
         } else {
-            targetX = sr.getScaledWidth() - width - 5; // 目标位置
+            if (!isExiting && !slideAnim.isRunning()) {
+                slideAnim.run(sr.getScaledWidth() - width - 5);
+            }
+            targetX = sr.getScaledWidth() - width - 5;
         }
 
-        // 核心动画算法：当前值 = 当前值 + (目标值 - 当前值) * 速度
-        // 0.2F 是动画速度，越大越快
-        this.x = lerp(this.x, targetX, 0.15f);
-        this.y = lerp(this.y, targetY, 0.15f);
+        if (slideAnim.isRunning() || !isExiting) {
+            animX = (float) slideAnim.getValue();
+        }
 
-        // 如果完全移出屏幕了，就不渲染了
-        if (Math.abs(this.x - targetX) < 1 && isExiting) {
+        // y 轴也做平滑
+        float dy = targetY - this.y;
+        this.y += dy * 0.2f;
+        if (Math.abs(dy) < 0.5f) this.y = targetY;
+
+        // 已完全滑出屏幕就不渲染
+        if (isExiting && animX > sr.getScaledWidth() + width - 5) {
             return;
         }
 
-        // 2. 绘制背景 (这里用简单的矩形，如果你有 RenderUtil.drawRoundedRect 可以替换)
-        // 背景黑底半透明
-        Gui.drawRect((int)x, (int)y, (int)(x + width), (int)(y + height), new Color(0, 0, 0, 180).getRGB());
+        float x = animX;
 
-        // 3. 绘制进度条 (底部的一条线)
-        float progress = (float) (duration - timeElapsed) / duration; // 剩余时间百分比
-        float barWidth = width * progress;
-        // 进度条颜色根据类型变化
-        int color = type.getColor().getRGB();
-        Gui.drawRect((int)x, (int)(y + height - 2), (int)(x + barWidth), (int)(y + height), color);
+        // 阴影层
+        DrawUtil.drawRoundedRect(x + 2, y + 2, width, height, 6, new Color(0, 0, 0, 80).getRGB());
 
-        // 4. 绘制图标/文字
-        // 绘制标题
-        fr.drawStringWithShadow(title, x + 5, y + 4, -1);
-        // 绘制内容
-        fr.drawString(description, (int) (x + 5), (int)(y + 16), new Color(220, 220, 220).getRGB());
+        // 主体背景 — 圆角
+        DrawUtil.drawRoundedRect(x, y, width, height, 6, new Color(20, 20, 20, 220).getRGB());
 
-        // 绘制右侧的状态图标 (这里用简单的字母代替，Reversal用的是图标字体)
-        // 放大一点显示类型首字母
-        fr.drawStringWithShadow(type.getIcon(), x + width - 15, y + 10, type.getColor().getRGB());
+        // 左侧色条
+        int typeColor = type.getColor().getRGB();
+        DrawUtil.drawRoundedRect(x + 2, y + 4, 3, height - 8, 2, typeColor);
+
+        // 圆形图标
+        DrawUtil.drawCircle(x + 14, y + height / 2, 7, typeColor);
+        fr.drawStringWithShadow(type.getIcon(), x + 11, y + height / 2 - fr.FONT_HEIGHT / 2, 0xFFFFFFFF);
+
+        // 标题
+        fr.drawStringWithShadow(title, x + 26, y + 4, 0xFFFFFFFF);
+
+        // 描述
+        fr.drawString(description, (int) (x + 26), (int)(y + 18), new Color(200, 200, 200).getRGB());
+
+        // 进度条 — 圆角
+        float progress = 1.0f - (float) timeElapsed / duration;
+        progress = Math.max(0, Math.min(1, progress));
+        float barWidth = (width - 6) * progress;
+        DrawUtil.drawRoundedRect(x + 3, y + height - 4, barWidth, 2, 1, typeColor);
     }
 
     public boolean shouldDelete() {
-        return isExiting && this.x > new ScaledResolution(mc).getScaledWidth();
-    }
-
-    // 简单的线性插值函数
-    private float lerp(float start, float end, float factor) {
-        return start + factor * (end - start);
+        return isExiting && animX > new ScaledResolution(mc).getScaledWidth() + width - 5;
     }
 }

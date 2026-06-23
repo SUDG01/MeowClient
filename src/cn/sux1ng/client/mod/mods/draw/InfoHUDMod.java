@@ -2,6 +2,7 @@ package cn.sux1ng.client.mod.mods.draw;
 
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
+import cn.sux1ng.client.util.DrawUtil;
 import cn.sux1ng.client.value.BooleanValue;
 import cn.sux1ng.client.value.ColorValue;
 import cn.sux1ng.client.value.NumberValue;
@@ -28,10 +29,11 @@ public class InfoHUDMod extends Mod {
     public BooleanValue showFPS = new BooleanValue("FPS", true);
     public BooleanValue showBPS = new BooleanValue("BPS", true);
     public BooleanValue showXYZ = new BooleanValue("XYZ", true);
+    public BooleanValue showBackground = new BooleanValue("Background", false);
 
     public InfoHUDMod() {
         super("InfoHUD", Category.DRAW);
-        addValues(x, y, rainbow, staticColor, showFPS, showBPS, showXYZ);
+        addValues(x, y, rainbow, staticColor, showFPS, showBPS, showXYZ, showBackground);
         setEnable(true);
     }
 
@@ -65,6 +67,17 @@ public class InfoHUDMod extends Mod {
 
         // 固定颜色
         int staticRGB = staticColor.getRGB();
+
+        // 可选圆角背景
+        if (showBackground.getValue() && !lines.isEmpty()) {
+            float bgW = 0;
+            for (String line : lines) {
+                float w = fr.getStringWidth(line);
+                if (w > bgW) bgW = w;
+            }
+            float bgH = lines.size() * (fr.FONT_HEIGHT + 2) + 4;
+            DrawUtil.drawRoundedRect(startX - 3, startY - 3, bgW + 10, bgH, 4, 0x60000000);
+        }
 
         int count = 0;
         for (String line : lines) {

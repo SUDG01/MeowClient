@@ -73,10 +73,10 @@ public class LogoMod extends Mod {
             float width = fr.getStringWidth(text) + 6;
             float height = 12;
 
-            // 画背景 (半透明黑)
-            DrawUtil.drawRect((int)posX, (int)posY, (int)width, (int)height, 0x80000000);
-            // 画顶部线条 (粉色)
-            DrawUtil.drawRect((int)posX, (int)posY, (int)width, 2, 0xFFFFB7B2);
+            // 画圆角背景
+            DrawUtil.drawRoundedRect(posX, posY, width, height, 3, 0x80000000);
+            // 画顶部圆角线条
+            DrawUtil.drawRoundedRect(posX, posY, width, 2, 1, 0xFFFFB7B2);
 
             // 画文字 (居中一点)
             fr.drawStringWithShadow(text, posX + 3, posY + 3, -1);

@@ -73,14 +73,14 @@ public class ArrayListMod extends Mod {
                     break;
             }
 
-            // 背景
+            // 圆角背景
             if (background.getValue()) {
-                Gui.drawRect(x - 2, y - 2, sr.getScaledWidth(), y + height - 2, 0x60000000);
+                cn.sux1ng.client.util.DrawUtil.drawRoundedRect(x - 3, y - 1, sr.getScaledWidth() - x + 3, height, 3, 0x60000000);
             }
 
-            // 侧边条
+            // 圆角侧边条
             if (sidebar.getValue()) {
-                Gui.drawRect(sr.getScaledWidth() - 2, y - 2, sr.getScaledWidth(), y + height - 2, color);
+                cn.sux1ng.client.util.DrawUtil.drawRoundedRect(sr.getScaledWidth() - 3, y - 1, 3, height, 1.5, color);
             }
 
             // 文字
