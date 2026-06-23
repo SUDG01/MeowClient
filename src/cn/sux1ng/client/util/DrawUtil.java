@@ -20,7 +20,8 @@ public class DrawUtil {
     }
 
     /**
-     * 圆角矩形
+     * 圆角矩形 — 纯 GlStateManager.color() + POSITION 格式
+     * 每处进入时保存 GL 状态，退出时恢复，不污染全局管线
      */
     public static void drawRoundedRect(double x, double y, double width, double height, double radius, int color) {
         double r = Math.min(radius, Math.min(width / 2, height / 2));
@@ -34,13 +35,41 @@ public class DrawUtil {
         float grn = (color >> 8 & 255) / 255f;
         float blu = (color & 255) / 255f;
 
+        // 保存状态
+        GlStateManager.pushMatrix();
         GlStateManager.enableBlend();
         GlStateManager.disableTexture2D();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManager.color(red, grn, blu, a);
 
         Tessellator tessellator = Tessellator.getInstance();
         WorldRenderer wr = tessellator.getWorldRenderer();
 
+        // 画主体（一个大的矩形覆盖所有区域）
+        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION);
+        wr.pos(x, y + r, 0).endVertex();
+        wr.pos(x + width, y + r, 0).endVertex();
+        wr.pos(x + width, y + height - r, 0).endVertex();
+        wr.pos(x, y + height - r, 0).endVertex();
+        tessellator.draw();
+
+        // 上边条
+        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION);
+        wr.pos(x + r, y, 0).endVertex();
+        wr.pos(x + width - r, y, 0).endVertex();
+        wr.pos(x + width - r, y + r, 0).endVertex();
+        wr.pos(x + r, y + r, 0).endVertex();
+        tessellator.draw();
+
+        // 下边条
+        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION);
+        wr.pos(x + r, y + height - r, 0).endVertex();
+        wr.pos(x + width - r, y + height - r, 0).endVertex();
+        wr.pos(x + width - r, y + height, 0).endVertex();
+        wr.pos(x + r, y + height, 0).endVertex();
+        tessellator.draw();
+
+        // 四个圆角扇形（TRIANGLE_FAN）
         double[][] corners = {
                 {x + r, y + r},
                 {x + width - r, y + r},
@@ -53,45 +82,20 @@ public class DrawUtil {
         for (int i = 0; i < 4; i++) {
             double cx = corners[i][0];
             double cy = corners[i][1];
-            double start = startAngles[i];
-            double end = start + Math.PI / 2;
-
-            wr.begin(GL11.GL_TRIANGLE_FAN, DefaultVertexFormats.POSITION_COLOR);
-            wr.pos(cx, cy, 0).color(red, grn, blu, a).endVertex();
+            wr.begin(GL11.GL_TRIANGLE_FAN, DefaultVertexFormats.POSITION);
+            wr.pos(cx, cy, 0).endVertex();
             for (int j = 0; j <= segments; j++) {
-                double angle = start + (end - start) * j / segments;
-                double px = cx + Math.cos(angle) * r;
-                double py = cy + Math.sin(angle) * r;
-                wr.pos(px, py, 0).color(red, grn, blu, a).endVertex();
+                double angle = startAngles[i] + (Math.PI / 2) * j / segments;
+                wr.pos(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r, 0).endVertex();
             }
             tessellator.draw();
         }
 
-        // 中央 + 上边条 + 下边条
-        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
-        wr.pos(x + r, y, 0).color(red, grn, blu, a).endVertex();
-        wr.pos(x + width - r, y, 0).color(red, grn, blu, a).endVertex();
-        wr.pos(x + width - r, y + height, 0).color(red, grn, blu, a).endVertex();
-        wr.pos(x + r, y + height, 0).color(red, grn, blu, a).endVertex();
-        tessellator.draw();
-
-        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
-        wr.pos(x + r, y, 0).color(red, grn, blu, a).endVertex();
-        wr.pos(x + width - r, y, 0).color(red, grn, blu, a).endVertex();
-        wr.pos(x + width - r, y + r, 0).color(red, grn, blu, a).endVertex();
-        wr.pos(x + r, y + r, 0).color(red, grn, blu, a).endVertex();
-        tessellator.draw();
-
-        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
-        wr.pos(x + r, y + height - r, 0).color(red, grn, blu, a).endVertex();
-        wr.pos(x + width - r, y + height - r, 0).color(red, grn, blu, a).endVertex();
-        wr.pos(x + width - r, y + height, 0).color(red, grn, blu, a).endVertex();
-        wr.pos(x + r, y + height, 0).color(red, grn, blu, a).endVertex();
-        tessellator.draw();
-
+        // 恢复状态
+        GlStateManager.color(1, 1, 1, 1);
         GlStateManager.enableTexture2D();
         GlStateManager.disableBlend();
-        GlStateManager.color(1, 1, 1, 1);
+        GlStateManager.popMatrix();
     }
 
     /**
@@ -100,10 +104,10 @@ public class DrawUtil {
     public static void drawRoundedOutline(double x, double y, double width, double height,
                                           double radius, double borderWidth, int color) {
         drawRoundedRect(x, y, width, height, radius, color);
-        // 内部挖空用原来的背景色（不透明黑），避免用 alpha=0 破坏 GL 状态
+        // 内部挖空
         drawRoundedRect(x + borderWidth, y + borderWidth,
                 width - borderWidth * 2, height - borderWidth * 2,
-                Math.max(0, radius - borderWidth), 0xFF000000);
+                Math.max(0, radius - borderWidth), 0xFF101010);
     }
 
     /**
@@ -121,6 +125,7 @@ public class DrawUtil {
         float g2 = (colorBottom >> 8 & 255) / 255f;
         float b2 = (colorBottom & 255) / 255f;
 
+        GlStateManager.pushMatrix();
         GlStateManager.disableTexture2D();
         GlStateManager.enableBlend();
         GlStateManager.disableAlpha();
@@ -141,6 +146,7 @@ public class DrawUtil {
         GlStateManager.enableAlpha();
         GlStateManager.enableTexture2D();
         GlStateManager.color(1, 1, 1, 1);
+        GlStateManager.popMatrix();
     }
 
     /**
@@ -158,6 +164,7 @@ public class DrawUtil {
         float g2 = (colorRight >> 8 & 255) / 255f;
         float b2 = (colorRight & 255) / 255f;
 
+        GlStateManager.pushMatrix();
         GlStateManager.disableTexture2D();
         GlStateManager.enableBlend();
         GlStateManager.disableAlpha();
@@ -178,6 +185,7 @@ public class DrawUtil {
         GlStateManager.enableAlpha();
         GlStateManager.enableTexture2D();
         GlStateManager.color(1, 1, 1, 1);
+        GlStateManager.popMatrix();
     }
 
     /**
@@ -189,26 +197,27 @@ public class DrawUtil {
         float g = (color >> 8 & 255) / 255f;
         float b = (color & 255) / 255f;
 
+        GlStateManager.pushMatrix();
         GlStateManager.enableBlend();
         GlStateManager.disableTexture2D();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManager.color(r, g, b, a);
 
         Tessellator tessellator = Tessellator.getInstance();
         WorldRenderer wr = tessellator.getWorldRenderer();
-        wr.begin(GL11.GL_TRIANGLE_FAN, DefaultVertexFormats.POSITION_COLOR);
-        wr.pos(centerX, centerY, 0).color(r, g, b, a).endVertex();
+        wr.begin(GL11.GL_TRIANGLE_FAN, DefaultVertexFormats.POSITION);
+        wr.pos(centerX, centerY, 0).endVertex();
 
         int segments = 24;
         for (int i = 0; i <= segments; i++) {
             double angle = Math.PI * 2 * i / segments;
-            double px = centerX + Math.cos(angle) * radius;
-            double py = centerY + Math.sin(angle) * radius;
-            wr.pos(px, py, 0).color(r, g, b, a).endVertex();
+            wr.pos(centerX + Math.cos(angle) * radius, centerY + Math.sin(angle) * radius, 0).endVertex();
         }
         tessellator.draw();
 
+        GlStateManager.color(1, 1, 1, 1);
         GlStateManager.enableTexture2D();
         GlStateManager.disableBlend();
-        GlStateManager.color(1, 1, 1, 1);
+        GlStateManager.popMatrix();
     }
 }
