@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="MeowClient">
+    <output-path>$PROJECT_DIR$/out/artifacts/MeowClient</output-path>
+    <root id="archive" name="MeowClient.jar">
+      <element id="module-output" name="MeowClient-Reborn" />
+    </root>
+  </artifact>
+</component>

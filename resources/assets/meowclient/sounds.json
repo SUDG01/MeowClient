@@ -1,0 +1,20 @@
+{
+  "meowclient.click.normal": {
+    "category": "player",
+    "sounds": [
+      "meowclient:nc"
+    ]
+  },
+  "meowclient.click.jitter": {
+    "category": "player",
+    "sounds": [
+      "meowclient:jc"
+    ]
+  },
+  "meowclient.click.double": {
+    "category": "player",
+    "sounds": [
+      "meowclient:dbc"
+    ]
+  }
+}
