@@ -41,8 +41,8 @@ public class BreadcrumbsMod extends Mod {
         trail.addFirst(new double[]{x, y, z, System.currentTimeMillis()});
 
         // 限制长度
-        long maxAge = (long) fadeTime.getValue();
-        while (trail.size() > maxPoints.getValue() ||
+        long maxAge = fadeTime.getValue().longValue();
+        while (trail.size() > maxPoints.getValue().intValue() ||
                 (trail.size() > 1 && System.currentTimeMillis() - trail.peekLast()[3] > maxAge)) {
             trail.pollLast();
         }

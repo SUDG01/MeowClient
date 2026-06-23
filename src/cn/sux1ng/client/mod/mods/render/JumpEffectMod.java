@@ -51,14 +51,14 @@ public class JumpEffectMod extends Mod {
             double px = mc.thePlayer.lastTickPosX + (mc.thePlayer.posX - mc.thePlayer.lastTickPosX) * partialTicks;
             double py = mc.thePlayer.lastTickPosY + (mc.thePlayer.posY - mc.thePlayer.lastTickPosY) * partialTicks;
             double pz = mc.thePlayer.lastTickPosZ + (mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ) * partialTicks;
-            for (int i = 0; i < ringCount.getValue(); i++) {
+            for (int i = 0; i < ringCount.getValue().intValue(); i++) {
                 rings.add(new JumpRing(px, py, pz));
             }
         }
         wasOnGround = mc.thePlayer.onGround;
 
         // 渲染光环
-        long maxAge = (long) duration.getValue();
+        long maxAge = duration.getValue().longValue();
         rings.removeIf(r -> System.currentTimeMillis() - r.startTime > maxAge);
 
         double rx = mc.getRenderManager().renderPosX;

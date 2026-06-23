@@ -1,4 +1,4 @@
-# MeowClient R3
+# MeowClient
 
 A kawaii-themed Minecraft 1.8.9 PVP utility client based on MCP (Minecraft Coder Pack).
 

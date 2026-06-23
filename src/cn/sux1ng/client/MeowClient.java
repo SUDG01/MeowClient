@@ -11,7 +11,7 @@ import org.lwjgl.opengl.Display;
 
 public class MeowClient {
     public static final String NAME = "MeowClient";
-    public static final String VERSION = "R3";
+    public static final String VERSION = "R4";
 
     // 【关键修改 1】定义 instance！
     // 这行代码的意思是：创建一个 MeowClient 的对象，起名叫 instance

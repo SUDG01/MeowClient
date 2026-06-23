@@ -53,7 +53,7 @@ public class DamageParticlesMod extends Mod {
         }
 
         // 渲染浮空数字
-        long maxAge = (long) lifeTime.getValue();
+        long maxAge = lifeTime.getValue().longValue();
         particles.removeIf(p -> System.currentTimeMillis() - p.startTime > maxAge);
         if (particles.isEmpty()) return;
 
