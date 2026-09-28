@@ -3,12 +3,11 @@ package cn.sux1ng.client.events.impl;
 import cn.sux1ng.client.events.Event;
 
 /**
- * 运动事件 — 每 tick 在 EntityPlayerSP.onLivingUpdate() 中触发
- * PRE:  在移动计算之前（可修改 yaw/pitch 实现 Silent Aim）
- * POST: 在移动计算之后（可读取最终位置）
+ * PRE runs before movement packets are assembled; changes to position, rotation and
+ * onGround are copied into EventUpdate. POST is an observation after packet submission.
  */
 public class MotionEvent extends Event {
-    public Type type;
+    public final Type type;
     public double x, y, z;
     public float yaw, pitch;
     public boolean onGround;

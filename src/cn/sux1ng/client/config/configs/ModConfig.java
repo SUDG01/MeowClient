@@ -9,16 +9,27 @@ import cn.sux1ng.client.value.ModeValue;
 import cn.sux1ng.client.value.NumberValue;
 import cn.sux1ng.client.value.TextValue;
 import cn.sux1ng.client.value.Value;
-import com.google.gson.Gson;
+import cn.sux1ng.client.value.ValueGroup;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonElement; // 导入这个
+import com.google.gson.JsonParser;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
-import java.util.Map; // 导入这个
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
+/** Module settings are restored at startup; activation waits for the first player update. */
 public class ModConfig extends Config {
+    private final Set<Mod> pendingEnabled = new LinkedHashSet<>();
 
     public ModConfig() {
         super("Mod");
@@ -27,134 +38,189 @@ public class ModConfig extends Config {
     @Override
     public void load() {
         try {
-            // 防空文件处理
-            if (!getPath().toFile().exists()) return;
-            byte[] bytes = Files.readAllBytes(getPath());
-            if (bytes.length == 0) return;
+            loadFrom(getPath(), MeowClient.modManager.getMods());
+        } catch (IOException | RuntimeException failure) {
+            System.err.println("Config load failed: " + failure.getMessage());
+        }
+    }
 
-            JsonObject jsonObject = new Gson().fromJson(new String(bytes, StandardCharsets.UTF_8), JsonObject.class);
-            if (jsonObject == null) return;
+    public void loadFrom(Path path, List<? extends Mod> modules) throws IOException {
+        if (!Files.exists(path)) return;
+        byte[] bytes = Files.readAllBytes(path);
+        if (bytes.length == 0) return;
+        JsonElement parsed = new JsonParser().parse(new String(bytes, StandardCharsets.UTF_8));
+        if (parsed != null && parsed.isJsonObject()) {
+            restoreSettings(parsed.getAsJsonObject(), modules);
+        }
+    }
 
-            for (Mod mod : MeowClient.modManager.getMods()) {
-                if (jsonObject.has(mod.getName())) {
-                    JsonObject modJson = jsonObject.get(mod.getName()).getAsJsonObject();
+    /** Restores values first, then records modules that must be enabled after world entry. */
+    public void restoreSettings(JsonObject root, List<? extends Mod> modules) {
+        pendingEnabled.clear();
+        for (Mod mod : modules) {
+            try {
+                JsonElement entry = root.get(mod.getName());
+                if (entry == null || !entry.isJsonObject()) continue;
+                JsonObject modJson = entry.getAsJsonObject();
 
-                    // 1. 读取开关状态
-                    if (modJson.has("enable")) {
-                        boolean targetState = modJson.get("enable").getAsBoolean();
-                        if (mod.isEnable() != targetState) {
-                            mod.setEnable(targetState);
-                        }
-                    }
-
-                    // 2. 读取按键绑定
-                    if (modJson.has("key")) {
+                if (modJson.has("key")) {
+                    try {
                         mod.setKey(modJson.get("key").getAsInt());
-                    }
-
-                    // 3. 【新增】读取参数设置 (Values)
-                    if (modJson.has("values")) {
-                        JsonObject valuesJson = modJson.get("values").getAsJsonObject();
-
-                        // 遍历模块里现有的所有参数
-                        for (Value<?> value : mod.getValues()) {
-                            // 如果配置文件里有这个参数的名字
-                            if (valuesJson.has(value.getName())) {
-                                try {
-                                    JsonElement element = valuesJson.get(value.getName());
-
-                                    // 根据类型分别恢复数据
-                                    if (value instanceof BooleanValue) {
-                                        ((BooleanValue) value).setValue(element.getAsBoolean());
-                                    } else if (value instanceof NumberValue) {
-                                        ((NumberValue) value).setValue(element.getAsDouble());
-                                    } else if (value instanceof ModeValue) {
-                                        ((ModeValue) value).setValue(element.getAsString());
-                                    } else if (value instanceof ColorValue) {
-                                        // ColorValue 保存为 JSON 对象 {rgb, hue, saturation, brightness, alpha}
-                                        if (element.isJsonObject()) {
-                                            com.google.gson.JsonObject colorObj = element.getAsJsonObject();
-                                            ColorValue cv = (ColorValue) value;
-                                            if (colorObj.has("hue")) {
-                                                cv.setHue(colorObj.get("hue").getAsFloat());
-                                                cv.setSaturation(colorObj.get("saturation").getAsFloat());
-                                                cv.setBrightness(colorObj.get("brightness").getAsFloat());
-                                                cv.setAlpha(colorObj.get("alpha").getAsInt());
-                                            } else if (colorObj.has("rgb")) {
-                                                // 兼容旧格式：只有 rgb int
-                                                cv.setValue(colorObj.get("rgb").getAsInt());
-                                            }
-                                        } else {
-                                            // 兼容纯 int 格式
-                                            ((ColorValue) value).setValue(element.getAsInt());
-                                        }
-                                    } else if (value instanceof TextValue) {
-                                        ((TextValue) value).setValue(element.getAsString());
-                                    }
-                                } catch (Exception e) {
-                                    System.out.println("Error loading value: " + value.getName());
-                                }
-                            }
-                        }
+                    } catch (RuntimeException failure) {
+                        System.err.println("Invalid key for " + mod.getName() + ": " + failure.getMessage());
                     }
                 }
+                if (modJson.has("bindMode")) {
+                    try {
+                        mod.setBindMode(Mod.BindMode.valueOf(
+                                modJson.get("bindMode").getAsString().toUpperCase(Locale.ROOT)));
+                    } catch (RuntimeException ignored) {
+                        // Keep the module's default binding for an unknown mode.
+                    }
+                }
+                JsonElement values = modJson.get("values");
+                if (values != null && values.isJsonObject()) {
+                    JsonObject settings = values.getAsJsonObject();
+                    for (Value<?> value : mod.getValues()) restoreValue(settings, value);
+                }
+
+                if (modJson.has("enable")) {
+                    try {
+                        if (modJson.get("enable").getAsBoolean() && mod.getBindMode() != Mod.BindMode.HOLD) {
+                            if (!mod.isEnable()) pendingEnabled.add(mod);
+                        } else if (mod.isEnable()) {
+                            mod.setEnable(false);
+                        }
+                    } catch (RuntimeException failure) {
+                        System.err.println("Invalid enabled state for " + mod.getName() + ": " + failure.getMessage());
+                    }
+                }
+            } catch (RuntimeException failure) {
+                System.err.println("Config entry for " + mod.getName() + " failed: " + failure.getMessage());
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            System.out.println("Config load failed: " + e.getMessage());
+        }
+    }
+
+    private void restoreValue(JsonObject settings, Value<?> value) {
+        if (value instanceof ValueGroup) {
+            JsonElement group = settings.get(value.getName());
+            JsonObject children = group != null && group.isJsonObject() ? group.getAsJsonObject() : settings;
+            for (Value<?> child : ((ValueGroup) value).getChildren()) restoreValue(children, child);
+            return;
+        }
+        JsonElement element = settings.get(value.getName());
+        if (element == null && "BlockHit".equals(value.getName())) {
+            // R4/R5 AutoClicker called this setting "Blatant"; preserve old configs.
+            element = settings.get("Blatant");
+        }
+        if (element == null || element.isJsonNull()) return;
+        try {
+            if (value instanceof BooleanValue) {
+                ((BooleanValue) value).setValue(element.getAsBoolean());
+            } else if (value instanceof NumberValue) {
+                ((NumberValue) value).setValue(element.getAsDouble());
+            } else if (value instanceof ModeValue) {
+                ((ModeValue) value).setValue(element.getAsString());
+            } else if (value instanceof TextValue) {
+                ((TextValue) value).setValue(element.getAsString());
+            } else if (value instanceof ColorValue) {
+                ColorValue color = (ColorValue) value;
+                if (element.isJsonObject()) {
+                    JsonObject object = element.getAsJsonObject();
+                    if (object.has("hue") && object.has("saturation")
+                            && object.has("brightness") && object.has("alpha")) {
+                        color.setHue(object.get("hue").getAsFloat());
+                        color.setSaturation(object.get("saturation").getAsFloat());
+                        color.setBrightness(object.get("brightness").getAsFloat());
+                        color.setAlpha(object.get("alpha").getAsInt());
+                    } else if (object.has("rgb")) {
+                        color.setValue(object.get("rgb").getAsInt());
+                    }
+                } else {
+                    color.setValue(element.getAsInt());
+                }
+            }
+        } catch (RuntimeException failure) {
+            System.err.println("Config value " + value.getName() + " failed: " + failure.getMessage());
+        }
+    }
+
+    /** Called once a player update proves that world and player objects exist. */
+    public void activatePendingModules() {
+        List<Mod> toEnable = new ArrayList<>(pendingEnabled);
+        pendingEnabled.clear();
+        for (Mod mod : toEnable) {
+            try {
+                mod.setEnable(true);
+            } catch (RuntimeException failure) {
+                System.err.println("Could not enable " + mod.getName() + ": " + failure.getMessage());
+            }
+        }
+    }
+
+    public JsonObject serializeModules(List<? extends Mod> modules) {
+        JsonObject root = new JsonObject();
+        for (Mod mod : modules) {
+            JsonObject entry = new JsonObject();
+            entry.addProperty("enable", mod.getBindMode() != Mod.BindMode.HOLD
+                    && (mod.isEnable() || pendingEnabled.contains(mod)));
+            entry.addProperty("key", mod.getKey());
+            entry.addProperty("bindMode", mod.getBindMode().name());
+            JsonObject settings = new JsonObject();
+            for (Value<?> value : mod.getValues()) saveValue(settings, value);
+            if (settings.entrySet().size() > 0) entry.add("values", settings);
+            root.add(mod.getName(), entry);
+        }
+        return root;
+    }
+
+    private void saveValue(JsonObject settings, Value<?> value) {
+        if (value instanceof ValueGroup) {
+            JsonObject children = new JsonObject();
+            for (Value<?> child : ((ValueGroup) value).getChildren()) saveValue(children, child);
+            settings.add(value.getName(), children);
+        } else if (value instanceof BooleanValue) {
+            settings.addProperty(value.getName(), ((BooleanValue) value).getValue());
+        } else if (value instanceof NumberValue) {
+            settings.addProperty(value.getName(), ((NumberValue) value).getValue());
+        } else if (value instanceof ModeValue) {
+            settings.addProperty(value.getName(), ((ModeValue) value).getValue());
+        } else if (value instanceof TextValue) {
+            settings.addProperty(value.getName(), ((TextValue) value).getValue());
+        } else if (value instanceof ColorValue) {
+            ColorValue color = (ColorValue) value;
+            JsonObject object = new JsonObject();
+            object.addProperty("rgb", color.getRGB());
+            object.addProperty("hue", color.getHue());
+            object.addProperty("saturation", color.getSaturation());
+            object.addProperty("brightness", color.getBrightness());
+            object.addProperty("alpha", color.getAlpha());
+            settings.add(value.getName(), object);
         }
     }
 
     @Override
     public void save() {
-        JsonObject jsonObject = new JsonObject();
-
-        for (Mod mod : MeowClient.modManager.getMods()) {
-            JsonObject modJson = new JsonObject();
-
-            // 1. 保存基础信息
-            modJson.addProperty("enable", mod.isEnable());
-            modJson.addProperty("key", mod.getKey());
-
-            // 2. 【新增】保存参数设置
-            if (!mod.getValues().isEmpty()) {
-                JsonObject valuesJson = new JsonObject();
-
-                for (Value<?> value : mod.getValues()) {
-                    // 根据类型保存
-                    if (value instanceof BooleanValue) {
-                        valuesJson.addProperty(value.getName(), ((BooleanValue) value).getValue());
-                    } else if (value instanceof NumberValue) {
-                        valuesJson.addProperty(value.getName(), ((NumberValue) value).getValue());
-                    } else if (value instanceof ModeValue) {
-                        valuesJson.addProperty(value.getName(), ((ModeValue) value).getValue());
-                    } else if (value instanceof ColorValue) {
-                        // ColorValue 保存为包含 HSB 信息的 JSON 对象
-                        ColorValue cv = (ColorValue) value;
-                        com.google.gson.JsonObject colorObj = new com.google.gson.JsonObject();
-                        colorObj.addProperty("rgb", cv.getValue());
-                        colorObj.addProperty("hue", cv.getHue());
-                        colorObj.addProperty("saturation", cv.getSaturation());
-                        colorObj.addProperty("brightness", cv.getBrightness());
-                        colorObj.addProperty("alpha", cv.getAlpha());
-                        valuesJson.add(value.getName(), colorObj);
-                    } else if (value instanceof TextValue) {
-                        valuesJson.addProperty(value.getName(), ((TextValue) value).getValue());
-                    }
-                }
-
-                // 把参数包放进模块的 Json 里
-                modJson.add("values", valuesJson);
-            }
-
-            jsonObject.add(mod.getName(), modJson);
-        }
-
         try {
-            Files.write(getPath(), new GsonBuilder().setPrettyPrinting().create().toJson(jsonObject).getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            saveTo(getPath(), MeowClient.modManager.getMods());
+        } catch (IOException failure) {
+            throw new RuntimeException("Could not save module config", failure);
+        }
+    }
+
+    public void saveTo(Path path, List<? extends Mod> modules) throws IOException {
+        Files.createDirectories(path.getParent());
+        Path temporary = Files.createTempFile(path.getParent(), "Mod-", ".tmp");
+        try {
+            Files.write(temporary, new GsonBuilder().setPrettyPrinting().create()
+                    .toJson(serializeModules(modules)).getBytes(StandardCharsets.UTF_8));
+            try {
+                Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException unsupported) {
+                Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(temporary);
         }
     }
 }

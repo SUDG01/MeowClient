@@ -210,6 +210,7 @@ public class KillAuraMod extends Mod {
     }
 
     private void unblock() {
+        if (mc == null || mc.thePlayer == null || mc.getNetHandler() == null) return;
         mc.getNetHandler().addToSendQueue(new C07PacketPlayerDigging(C07PacketPlayerDigging.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, EnumFacing.DOWN));
     }
 

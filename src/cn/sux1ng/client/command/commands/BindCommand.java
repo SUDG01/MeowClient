@@ -3,6 +3,7 @@ package cn.sux1ng.client.command.commands;
 import cn.sux1ng.client.MeowClient;
 import cn.sux1ng.client.command.Command;
 import cn.sux1ng.client.mod.Mod;
+import cn.sux1ng.client.ui.ClientLanguage;
 import cn.sux1ng.client.util.ClientUtil; // 记得导入刚才写的 ClientUtil
 import net.minecraft.util.EnumChatFormatting;
 import org.lwjgl.input.Keyboard;
@@ -21,7 +22,7 @@ public class BindCommand extends Command {
         // 用户输入：.bind killaura r
 
         if (args.length < 2) {
-            ClientUtil.sendClientMessage("Usage: .bind <module> <key>");
+            ClientUtil.sendClientMessage(ClientLanguage.ui("Usage") + ": .bind <mod> <key>");
             return; // 【修改】这里直接 return，不要 return false
         }
 
@@ -31,7 +32,7 @@ public class BindCommand extends Command {
         // 使用你现有的 getByName 方法
         Mod mod = MeowClient.modManager.getByName(modName);
         if (mod == null) {
-            ClientUtil.sendClientMessage("Module '" + modName + "' not found!");
+            ClientUtil.sendClientMessage(ClientLanguage.ui("Module not found") + ": " + modName);
             return; // 【修改】直接 return
         }
 
@@ -43,10 +44,9 @@ public class BindCommand extends Command {
 
         // 发送成功提示 (带颜色)
         ClientUtil.sendClientMessage(
-                String.format("Bound %s%s%s to %s%s%s",
-                        EnumChatFormatting.AQUA, mod.getName(), EnumChatFormatting.GRAY,
-                        EnumChatFormatting.RED, Keyboard.getKeyName(keyCode), EnumChatFormatting.GRAY
-                )
+                ClientLanguage.ui("Bound") + " " + EnumChatFormatting.AQUA
+                        + ClientLanguage.module(mod) + EnumChatFormatting.GRAY + " → "
+                        + EnumChatFormatting.RED + Keyboard.getKeyName(keyCode)
         );
 
         // 如果你有保存配置的方法，可以在这里调用

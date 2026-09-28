@@ -1,6 +1,7 @@
 package cn.sux1ng.client.command.commands;
 
 import cn.sux1ng.client.command.Command;
+import cn.sux1ng.client.ui.ClientLanguage;
 import cn.sux1ng.client.util.ClientUtil;
 import net.minecraft.util.EnumChatFormatting;
 
@@ -13,13 +14,14 @@ public class HelpCommand extends Command {
     @Override
     public void run(String[] args) {
         // --- 头部装饰 ---
-        ClientUtil.sendClientMessage(EnumChatFormatting.LIGHT_PURPLE + "====== " + EnumChatFormatting.AQUA + "MeowClient Help" + EnumChatFormatting.LIGHT_PURPLE + " ======");
+        ClientUtil.sendClientMessage(EnumChatFormatting.LIGHT_PURPLE + "MeowClient "
+                + EnumChatFormatting.AQUA + ClientLanguage.ui("Help"));
 
         // --- 指令列表 ---
         // 格式：.指令 <参数> - 说明
-        sendHelp(".help", "显示帮助列表");
-        sendHelp(".enable <mod>", "开关指定功能");
-        sendHelp(".bind <mod> <key>", "绑定功能按键");
+        sendHelp(".help", ClientLanguage.ui("Show help"));
+        sendHelp(".enable <mod>", ClientLanguage.ui("Toggle module"));
+        sendHelp(".bind <mod> <key>", ClientLanguage.ui("Bind module key"));
 
     }
 

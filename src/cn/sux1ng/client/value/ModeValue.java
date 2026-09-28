@@ -12,6 +12,16 @@ public class ModeValue extends Value<String> {
         return modes;
     }
 
+    @Override
+    public void setValue(String value) {
+        for (String mode : modes) {
+            if (mode.equals(value)) {
+                super.setValue(value);
+                return;
+            }
+        }
+    }
+
     // 切换到下一个模式
     public void cycle() {
         String current = getValue();

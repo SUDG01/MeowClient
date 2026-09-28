@@ -1,0 +1,171 @@
+diff --git a/src/net/minecraft/client/gui/GuiIngame.java b/src/net/minecraft/client/gui/GuiIngame.java
+--- a/src/net/minecraft/client/gui/GuiIngame.java
++++ b/src/net/minecraft/client/gui/GuiIngame.java
+@@ -334,7 +334,6 @@
+         GlStateManager.translate(0.0F, (float)(j - 48), 0.0F);
+         this.mc.mcProfiler.startSection("chat");
+         this.persistantChatGUI.drawChat(this.updateCounter);
+-        cn.sux1ng.client.events.EventManager.call(new cn.sux1ng.client.events.EventRender2D(partialTicks));
+ 
+         this.mc.mcProfiler.endSection();
+         GlStateManager.popMatrix();
+diff --git a/src/net/minecraft/client/renderer/EntityRenderer.java b/src/net/minecraft/client/renderer/EntityRenderer.java
+--- a/src/net/minecraft/client/renderer/EntityRenderer.java
++++ b/src/net/minecraft/client/renderer/EntityRenderer.java
+@@ -1453,12 +1453,6 @@
+         this.mc.mcProfiler.endStartSection("weather");
+         this.renderRainSnow(partialTicks);
+ 
+-        if (MeowClient.modManager != null) {
+-            for (cn.sux1ng.client.mod.Mod mod : MeowClient.modManager.getEnableMods()) {
+-                mod.render(partialTicks);
+-            }
+-        }
+-
+         GlStateManager.depthMask(true);
+         renderglobal.renderWorldBorder(entity, partialTicks);
+         GlStateManager.disableBlend();
+@@ -1480,7 +1474,9 @@
+ 
+ 
+ 
+-        MeowClient.modManager.getEnableMods().forEach(it ->it.render(partialTicks));
++        if (MeowClient.modManager != null) {
++            MeowClient.modManager.getEnableMods().forEach(mod -> mod.render(partialTicks));
++        }
+ 
+         if (entity.posY + (double)entity.getEyeHeight() >= 128.0D)
+         {
+diff --git a/src/net/minecraft/client/Minecraft.java b/src/net/minecraft/client/Minecraft.java
+--- a/src/net/minecraft/client/Minecraft.java
++++ b/src/net/minecraft/client/Minecraft.java
+@@ -1078,7 +1078,6 @@
+      */
+     public void shutdownMinecraftApplet()
+     {
+-        cn.sux1ng.client.MeowClient.stop();
+         try
+         {
+             this.stream.shutdownStream();
+@@ -1968,10 +1967,6 @@
+                 {
+                     MeowClient.modManager.getEnableMods().forEach(mod -> mod.key(k));
+                     MeowClient.modManager.onKey(k);
+-                }
+-                else
+-                {
+-                    MeowClient.modManager.onKeyRelease(k);
+ 
+                     if (k == 62 && this.entityRenderer != null)
+                     {
+@@ -2110,6 +2105,10 @@
+                             }
+                         }
+                     }
++                }
++                else
++                {
++                    MeowClient.modManager.onKeyRelease(k);
+                 }
+             }
+ 
+diff --git a/src/net/minecraft/network/NetworkManager.java b/src/net/minecraft/network/NetworkManager.java
+--- a/src/net/minecraft/network/NetworkManager.java
++++ b/src/net/minecraft/network/NetworkManager.java
+@@ -154,9 +154,10 @@
+             cn.sux1ng.client.events.impl.PacketReceiveEvent receiveEvent = new cn.sux1ng.client.events.impl.PacketReceiveEvent(p_channelRead0_2_);
+             cn.sux1ng.client.events.EventManager.call(receiveEvent);
+             if (receiveEvent.isCancelled()) return;
++            Packet packetToProcess = receiveEvent.getPacket();
+             try
+             {
+-                p_channelRead0_2_.processPacket(this.packetListener);
++                packetToProcess.processPacket(this.packetListener);
+             }
+             catch (ThreadQuickExitException var4)
+             {
+@@ -182,10 +183,11 @@
+         cn.sux1ng.client.events.impl.PacketSendEvent sendEvent = new cn.sux1ng.client.events.impl.PacketSendEvent(packetIn);
+         cn.sux1ng.client.events.EventManager.call(sendEvent);
+         if (sendEvent.isCancelled()) return;
++        Packet packetToSend = sendEvent.getPacket();
+         if (this.isChannelOpen())
+         {
+             this.flushOutboundQueue();
+-            this.dispatchPacket(packetIn, (GenericFutureListener <? extends Future <? super Void >> [])null);
++            this.dispatchPacket(packetToSend, (GenericFutureListener <? extends Future <? super Void >> [])null);
+         }
+         else
+         {
+@@ -193,7 +195,7 @@
+ 
+             try
+             {
+-                this.outboundPacketsQueue.add(new NetworkManager.InboundHandlerTuplePacketListener(packetIn, (GenericFutureListener[])null));
++                this.outboundPacketsQueue.add(new NetworkManager.InboundHandlerTuplePacketListener(packetToSend, (GenericFutureListener[])null));
+             }
+             finally
+             {
+@@ -204,10 +206,14 @@
+ 
+     public void sendPacket(Packet packetIn, GenericFutureListener <? extends Future <? super Void >> listener, GenericFutureListener <? extends Future <? super Void >> ... listeners)
+     {
++        cn.sux1ng.client.events.impl.PacketSendEvent sendEvent = new cn.sux1ng.client.events.impl.PacketSendEvent(packetIn);
++        cn.sux1ng.client.events.EventManager.call(sendEvent);
++        if (sendEvent.isCancelled()) return;
++        Packet packetToSend = sendEvent.getPacket();
+         if (this.isChannelOpen())
+         {
+             this.flushOutboundQueue();
+-            this.dispatchPacket(packetIn, (GenericFutureListener[])ArrayUtils.add(listeners, 0, listener));
++            this.dispatchPacket(packetToSend, (GenericFutureListener[])ArrayUtils.add(listeners, 0, listener));
+         }
+         else
+         {
+@@ -215,7 +221,7 @@
+ 
+             try
+             {
+-                this.outboundPacketsQueue.add(new NetworkManager.InboundHandlerTuplePacketListener(packetIn, (GenericFutureListener[])ArrayUtils.add(listeners, 0, listener)));
++                this.outboundPacketsQueue.add(new NetworkManager.InboundHandlerTuplePacketListener(packetToSend, (GenericFutureListener[])ArrayUtils.add(listeners, 0, listener)));
+             }
+             finally
+             {
+diff --git a/src/net/minecraft/client/entity/EntityPlayerSP.java b/src/net/minecraft/client/entity/EntityPlayerSP.java
+--- a/src/net/minecraft/client/entity/EntityPlayerSP.java
++++ b/src/net/minecraft/client/entity/EntityPlayerSP.java
+@@ -199,9 +199,15 @@
+         cn.sux1ng.client.events.EventManager.call(event);
+         // MeowClient: PreMotion
+         cn.sux1ng.client.events.impl.MotionEvent motionPre = new cn.sux1ng.client.events.impl.MotionEvent(
+-                cn.sux1ng.client.events.impl.MotionEvent.Type.PRE, this.posX, this.getEntityBoundingBox().minY, this.posZ,
+-                this.rotationYaw, this.rotationPitch, this.onGround);
++                cn.sux1ng.client.events.impl.MotionEvent.Type.PRE, event.getX(), event.getY(), event.getZ(),
++                event.getYaw(), event.getPitch(), event.isOnGround());
+         cn.sux1ng.client.events.EventManager.call(motionPre);
++        event.setX(motionPre.x);
++        event.setY(motionPre.y);
++        event.setZ(motionPre.z);
++        event.setYaw(motionPre.yaw);
++        event.setPitch(motionPre.pitch);
++        event.setOnGround(motionPre.onGround);
+ 
+         // --- 核心修改：下面的代码全部使用 event.get...() 来代替 this.posX 等 ---
+ 
+diff --git a/src/net/minecraft/entity/Entity.java b/src/net/minecraft/entity/Entity.java
+--- a/src/net/minecraft/entity/Entity.java
++++ b/src/net/minecraft/entity/Entity.java
+@@ -1223,10 +1223,10 @@
+     {
+         // MeowClient: StrafeEvent
+         if (this == net.minecraft.client.Minecraft.getMinecraft().thePlayer) {
+-            cn.sux1ng.client.events.impl.StrafeEvent strafeEvent = new cn.sux1ng.client.events.impl.StrafeEvent(strafe, forward, friction);
++            cn.sux1ng.client.events.impl.StrafeEvent strafeEvent = new cn.sux1ng.client.events.impl.StrafeEvent(forward, strafe, friction);
+             cn.sux1ng.client.events.EventManager.call(strafeEvent);
+-            strafe = strafeEvent.forward;
+-            forward = strafeEvent.strafe;
++            strafe = strafeEvent.strafe;
++            forward = strafeEvent.forward;
+             friction = strafeEvent.friction;
+         }
+         float f = strafe * strafe + forward * forward;

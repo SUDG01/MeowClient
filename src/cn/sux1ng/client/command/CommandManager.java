@@ -3,6 +3,7 @@ package cn.sux1ng.client.command;
 import cn.sux1ng.client.command.commands.BindCommand;
 import cn.sux1ng.client.command.commands.EnableCommand;
 import cn.sux1ng.client.command.commands.HelpCommand;
+import cn.sux1ng.client.ui.ClientLanguage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ChatComponentText;
 
@@ -25,6 +26,7 @@ public class CommandManager {
     }
 
     public boolean run(String message){
+        if (message == null || message.isEmpty()) return false;
         if ('.' == message.charAt(0)) {
             String substring = message.substring(1);
             String[] s = substring.split(" ");
@@ -36,7 +38,8 @@ public class CommandManager {
                 args.remove(0);
                 command.run(args.toArray(new String[0]));
             } else {
-                Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(new ChatComponentText(String.format("§c未知的指令: " + key)));
+                Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(new ChatComponentText(
+                        "§c" + ClientLanguage.ui("Unknown command") + ": " + key));
             }
             return true;
         }

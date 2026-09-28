@@ -2,6 +2,7 @@ package cn.sux1ng.client.mod.mods.draw;
 
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
+import cn.sux1ng.client.ui.MeowTheme;
 import cn.sux1ng.client.util.DrawUtil;
 import cn.sux1ng.client.value.BooleanValue;
 import cn.sux1ng.client.value.ColorValue;
@@ -21,8 +22,8 @@ public class InfoHUDMod extends Mod {
     public NumberValue y = new NumberValue("Y", 2.0, 0.0, 1000.0, 1.0);
 
     // 2. 颜色设置 — 使用 ColorValue 替代 R/G/B 三滑块
-    public BooleanValue rainbow = new BooleanValue("Rainbow", true);
-    public ColorValue staticColor = new ColorValue("Color", new Color(255, 183, 178))
+    public BooleanValue rainbow = new BooleanValue("Rainbow", false);
+    public ColorValue staticColor = new ColorValue("Color", new Color(246, 175, 203))
             .setVisibility(() -> !rainbow.getValue());
 
     // 3. 内容开关
@@ -76,7 +77,8 @@ public class InfoHUDMod extends Mod {
                 if (w > bgW) bgW = w;
             }
             float bgH = lines.size() * (fr.FONT_HEIGHT + 2) + 4;
-            DrawUtil.drawRoundedRect(startX - 3, startY - 3, bgW + 10, bgH, 4, 0x60000000);
+            DrawUtil.drawRoundedRect(startX - 4, startY - 4, bgW + 12, bgH + 2, 6,
+                    MeowTheme.withAlpha(MeowTheme.current().surface, 180));
         }
 
         int count = 0;

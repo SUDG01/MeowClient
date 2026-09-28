@@ -9,6 +9,7 @@ import cn.sux1ng.client.mod.mods.movement.NoJumpDelayMod;
 import cn.sux1ng.client.mod.mods.movement.NoSlowMod;
 import cn.sux1ng.client.mod.mods.movement.SpeedMod;
 import cn.sux1ng.client.mod.mods.movement.SprintMod;
+import cn.sux1ng.client.mod.mods.misc.BlatantMod;
 import cn.sux1ng.client.mod.mods.player.DerpMod;
 import cn.sux1ng.client.mod.mods.player.SkinDerpMod;
 import cn.sux1ng.client.mod.mods.player.TwerkMod;
@@ -18,15 +19,29 @@ import cn.sux1ng.client.mod.mods.world.AutoGGMod;
 import cn.sux1ng.client.mod.mods.world.AutoToolMod;
 import cn.sux1ng.client.mod.mods.world.EagleMod;
 import cn.sux1ng.client.mod.mods.world.FastPlaceMod;
+import cn.sux1ng.client.ui.ClientLanguage;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
 public class ModManager {
     private final List<Mod> mods = new ArrayList<>();
-    private long lastKeyTime = 0;       // SMART 模式用：上次按下时间
-    private int lastKeyCode = -1;       // SMART 模式用：上次按下的键
+    private final LongSupplier clock;
+    private final Map<Mod, Long> smartPressTimes = new IdentityHashMap<>();
+    private final Map<Mod, Boolean> smartInitialStates = new IdentityHashMap<>();
+
+    public ModManager() {
+        this(System::currentTimeMillis);
+    }
+
+    public ModManager(LongSupplier clock) {
+        this.clock = Objects.requireNonNull(clock, "clock");
+    }
 
     public List<Mod> getMods() {
         return mods;
@@ -40,7 +55,8 @@ public class ModManager {
      * 按键按下时调用
      */
     public void onKey(int key){
-        long now = System.currentTimeMillis();
+        if (key == 0) return;
+        long now = clock.getAsLong();
         for (Mod mod : mods) {
             if (mod.getKey() != key) continue;
 
@@ -52,36 +68,44 @@ public class ModManager {
                     mod.setEnable(true);
                     break;
                 case SMART:
-                    // 短按 (<250ms) = 切换，长按 = HOLD
-                    if (lastKeyCode == key && (now - lastKeyTime) < 400) {
-                        // 快速双击 = toggle
-                        mod.setEnable(!mod.isEnable());
-                        mod.setSmartHolding(false);
-                    } else {
-                        mod.setEnable(true);
-                        mod.setSmartHolding(true);
+                    if (!smartPressTimes.containsKey(mod)) {
+                        smartPressTimes.put(mod, now);
+                        smartInitialStates.put(mod, mod.isEnable());
+                        try {
+                            mod.setEnable(true);
+                            if (!mod.isEnable()) {
+                                // Action modules such as ClickGUI disable themselves after opening.
+                                smartPressTimes.remove(mod);
+                                smartInitialStates.remove(mod);
+                            }
+                        } catch (RuntimeException | Error failure) {
+                            smartPressTimes.remove(mod);
+                            smartInitialStates.remove(mod);
+                            throw failure;
+                        }
                     }
                     break;
             }
         }
-        lastKeyCode = key;
-        lastKeyTime = now;
     }
 
     /**
      * 按键松开时调用（HOLD/SMART 模式需要）
      */
     public void onKeyRelease(int key) {
+        if (key == 0) return;
+        long now = clock.getAsLong();
         for (Mod mod : mods) {
             if (mod.getKey() != key) continue;
+            Long pressedAt = smartPressTimes.remove(mod);
+            Boolean initiallyEnabled = smartInitialStates.remove(mod);
             switch (mod.getBindMode()) {
                 case HOLD:
                     mod.setEnable(false);
                     break;
                 case SMART:
-                    if (mod.isSmartHolding()) {
-                        mod.setEnable(false);
-                        mod.setSmartHolding(false);
+                    if (pressedAt != null && initiallyEnabled != null) {
+                        mod.setEnable(now - pressedAt < 250 ? !initiallyEnabled : initiallyEnabled);
                     }
                     break;
                 case TOGGLE:
@@ -92,6 +116,8 @@ public class ModManager {
     }
 
     public void load(){
+        // Restore this permission before any restricted modules during config activation.
+        mods.add(new BlatantMod());
         mods.add(new LogoMod());
         mods.add(new SprintMod());
         mods.add(new ArrayListMod());
@@ -147,7 +173,7 @@ public class ModManager {
 
     public Mod getByName(String name){
         for (Mod mod : mods) {
-            if (name.equalsIgnoreCase(mod.getName())) {
+            if (name.equalsIgnoreCase(mod.getName()) || name.equals(ClientLanguage.module(mod))) {
                 return mod;
             }
         }

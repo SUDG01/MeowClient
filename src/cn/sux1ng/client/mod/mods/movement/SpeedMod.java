@@ -91,7 +91,7 @@ public class SpeedMod extends Mod {
     // 计算基础速度 (考虑药水)
     private double getBaseMoveSpeed() {
         double baseSpeed = 0.2873;
-        if (mc.thePlayer.isPotionActive(Potion.moveSpeed)) {
+        if (mc.thePlayer != null && mc.thePlayer.isPotionActive(Potion.moveSpeed)) {
             int amplifier = mc.thePlayer.getActivePotionEffect(Potion.moveSpeed).getAmplifier();
             baseSpeed *= (1.0 + 0.2 * (amplifier + 1));
         }

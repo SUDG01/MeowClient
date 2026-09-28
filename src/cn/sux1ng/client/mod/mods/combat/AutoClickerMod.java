@@ -28,7 +28,7 @@ public class AutoClickerMod extends Mod {
             .setVisibility(() -> mode.is("Legit"));
 
 
-    public BooleanValue blockHit = new BooleanValue("Blatant", false);
+    public BooleanValue blockHit = new BooleanValue("BlockHit", false);
 
     private TimerUtil timer = new TimerUtil();
 

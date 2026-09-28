@@ -3,6 +3,9 @@ package cn.sux1ng.client.mod.mods.draw;
 import cn.sux1ng.client.MeowClient;
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
+import cn.sux1ng.client.ui.ClientLanguage;
+import cn.sux1ng.client.ui.MeowTheme;
+import cn.sux1ng.client.util.DrawUtil;
 import cn.sux1ng.client.value.ColorValue;
 import cn.sux1ng.client.value.NumberValue;
 import net.minecraft.client.Minecraft;
@@ -15,9 +18,9 @@ import java.util.List;
 
 public class TabMod extends Mod {
     // 选中/高亮颜色（樱花粉）
-    public ColorValue accentColor = new ColorValue("AccentColor", new Color(255, 183, 178));
+    public ColorValue accentColor = new ColorValue("AccentColor", new Color(246, 175, 203));
     // 背景颜色（半透明黑）
-    public ColorValue bgColor = new ColorValue("BackgroundColor", new Color(0, 0, 0, 96));
+    public ColorValue bgColor = new ColorValue("BackgroundColor", new Color(38, 34, 55, 190));
     // 整体缩放
     public NumberValue uiScale = new NumberValue("Scale", 1.0, 0.5, 2.0, 0.1);
 
@@ -68,22 +71,24 @@ public class TabMod extends Mod {
         // 计算分类面板宽度
         int categoryWidth = 0;
         for (Category c : Category.values()) {
-            int w = font.getStringWidth(c.name()) + 8;
+            int w = font.getStringWidth(ClientLanguage.category(c)) + 12;
             if (w > categoryWidth) categoryWidth = w;
         }
 
         // 背景
-        Gui.drawRect(x, y, x + categoryWidth, y + Category.values().length * height, bgColor.getRGB());
+        DrawUtil.drawRoundedRect(x, y, categoryWidth, Category.values().length * height, 6,
+                bgColor.getRGB());
 
         // 选中条
         int selectedY = y + currentCategory * height;
-        Gui.drawRect(x, selectedY, x + categoryWidth, selectedY + height, accentColor.getRGB());
+        DrawUtil.drawRoundedRect(x + 2, selectedY + 1, categoryWidth - 4, height - 2, 4,
+                MeowTheme.withAlpha(accentColor.getRGB(), 150));
 
         // 绘制文字
         for (int i = 0; i < Category.values().length; i++) {
             Category category = Category.values()[i];
-            String name = capitalize(category.name());
-            int color = (i == currentCategory) ? 0xFFFFFFFF : 0xFFAAAAAA;
+            String name = ClientLanguage.category(category);
+            int color = (i == currentCategory) ? MeowTheme.current().text : MeowTheme.current().muted;
             font.drawStringWithShadow(name, x + 4, y + i * height + (height / 2f - font.FONT_HEIGHT / 2f), color);
         }
 
@@ -96,29 +101,27 @@ public class TabMod extends Mod {
 
             int modWidth = 0;
             for (Mod m : mods) {
-                int w = font.getStringWidth(m.getName()) + 8;
+                int w = font.getStringWidth(ClientLanguage.module(m)) + 12;
                 if (w > modWidth) modWidth = w;
             }
 
-            Gui.drawRect(modX, modY, modX + modWidth, modY + mods.size() * height, bgColor.getRGB());
+            DrawUtil.drawRoundedRect(modX, modY, modWidth, mods.size() * height, 6, bgColor.getRGB());
 
-            Gui.drawRect(modX, modY + currentMod * height, modX + modWidth, modY + currentMod * height + height, accentColor.getRGB());
+            DrawUtil.drawRoundedRect(modX + 2, modY + currentMod * height + 1,
+                    modWidth - 4, height - 2, 4, MeowTheme.withAlpha(accentColor.getRGB(), 150));
 
             for (int i = 0; i < mods.size(); i++) {
                 Mod m = mods.get(i);
                 int color;
                 if (i == currentMod) {
-                    color = 0xFFFFFFFF;
+                    color = MeowTheme.current().text;
                 } else {
-                    color = m.isEnable() ? 0xFFFFB7B2 : 0xFFAAAAAA;
+                    color = m.isEnable() ? MeowTheme.current().accent : MeowTheme.current().muted;
                 }
-                font.drawStringWithShadow(m.getName(), modX + 4, modY + i * height + (height / 2f - font.FONT_HEIGHT / 2f), color);
+                font.drawStringWithShadow(ClientLanguage.module(m), modX + 5,
+                        modY + i * height + (height / 2f - font.FONT_HEIGHT / 2f), color);
             }
         }
     }
 
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty()) return str;
-        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
-    }
 }

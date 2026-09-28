@@ -13,7 +13,7 @@ public class ClientUtil {
     public static void sendClientMessage(String message) {
         if (Minecraft.getMinecraft().thePlayer != null) {
             Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(
-                    EnumChatFormatting.BLUE + "[Meow] " + EnumChatFormatting.GRAY + message
+                    EnumChatFormatting.LIGHT_PURPLE + "[MeowClient] " + EnumChatFormatting.GRAY + message
             ));
         }
     }

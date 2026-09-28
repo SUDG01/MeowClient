@@ -34,7 +34,7 @@ public class NotificationManager {
             }
 
             // 下一个通知的位置往上挪 (35 是高度 + 间距)
-            bottomY -= 35;
+            bottomY -= 42;
         }
     }
 }

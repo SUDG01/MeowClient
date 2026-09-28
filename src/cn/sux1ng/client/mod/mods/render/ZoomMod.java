@@ -38,29 +38,10 @@ public class ZoomMod extends Mod {
 
     @EventTarget
     public void onRender2D(EventRender2D event) {
-        float targetFov;
-
-        if (Keyboard.isKeyDown(getKey())) {
-            if (!mc.gameSettings.smoothCamera) {
-                mc.gameSettings.smoothCamera = true;
-            }
-            targetFov = zoomFOV.getValue().floatValue();
-        } else {
-            if (mc.gameSettings.smoothCamera) {
-                mc.gameSettings.smoothCamera = false;
-            }
-            targetFov = oldFov;
-        }
-
-        float diff = targetFov - mc.gameSettings.fovSetting;
-
+        mc.gameSettings.smoothCamera = true;
+        float diff = zoomFOV.getValue().floatValue() - mc.gameSettings.fovSetting;
         if (Math.abs(diff) > 0.01) {
             mc.gameSettings.fovSetting += diff * smoothSpeed.getValue().floatValue();
-        }
-
-        if (!Keyboard.isKeyDown(getKey()) && Math.abs(mc.gameSettings.fovSetting - oldFov) < 0.1) {
-            mc.gameSettings.fovSetting = oldFov;
-            setEnable(false);
         }
     }
 }

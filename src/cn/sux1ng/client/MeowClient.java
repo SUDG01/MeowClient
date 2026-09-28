@@ -4,14 +4,14 @@ import cn.sux1ng.client.command.CommandManager;
 import cn.sux1ng.client.config.ConfigManager;
 import cn.sux1ng.client.events.EventRender2D;
 import cn.sux1ng.client.events.EventTarget;
+import cn.sux1ng.client.events.EventUpdate;
 import cn.sux1ng.client.gui.clickgui.ClickGUI;
 import cn.sux1ng.client.mod.ModManager;
-import cn.sux1ng.client.ui.notification.NotificationType;
 import org.lwjgl.opengl.Display;
 
 public class MeowClient {
     public static final String NAME = "MeowClient";
-    public static final String VERSION = "R4";
+    public static final String VERSION = "R5";
 
     // 【关键修改 1】定义 instance！
     // 这行代码的意思是：创建一个 MeowClient 的对象，起名叫 instance
@@ -29,16 +29,13 @@ public class MeowClient {
         commandManager = new CommandManager();
 
         modManager.load();
+        clickGUI = new ClickGUI();
         configManager.load();
         commandManager.load();
-
-        clickGUI = new ClickGUI();
 
         // 【关键修改 2】现在 instance 存在了，可以注册了！
         // 这样下面的 onRender2D 才能接收到消息
         cn.sux1ng.client.events.EventManager.register(instance);
-
-        cn.sux1ng.client.ui.notification.NotificationManager.show("MeowClient","Notification Initialize Successfully!", NotificationType.SUCCESS);
 
         Display.setTitle(NAME + " | " + VERSION);
     }
@@ -56,5 +53,12 @@ public class MeowClient {
     public void onRender2D(EventRender2D event) {
         // 画 Notification
         cn.sux1ng.client.ui.notification.NotificationManager.render();
+    }
+
+    @EventTarget
+    public void onUpdate(EventUpdate event) {
+        if (event.isPre() && configManager != null) {
+            configManager.activatePendingModules();
+        }
     }
 }

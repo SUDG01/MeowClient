@@ -3,6 +3,7 @@ package cn.sux1ng.client.command.commands;
 import cn.sux1ng.client.MeowClient;
 import cn.sux1ng.client.command.Command;
 import cn.sux1ng.client.mod.Mod;
+import cn.sux1ng.client.ui.ClientLanguage;
 import cn.sux1ng.client.util.ClientUtil;
 import net.minecraft.util.EnumChatFormatting;
 
@@ -15,7 +16,7 @@ public class EnableCommand extends Command {
     public void run(String[] args) {
         // 1. 检查参数：如果没有输入模块名
         if (args.length < 1) {
-            ClientUtil.sendClientMessage("Usage: .enable <module>");
+            ClientUtil.sendClientMessage(ClientLanguage.ui("Usage") + ": .enable <mod>");
             return;
         }
 
@@ -31,23 +32,21 @@ public class EnableCommand extends Command {
             EnumChatFormatting color;
 
             if (mod.isEnable()) {
-                statusName = "Enabled";
+                statusName = ClientLanguage.ui("Enabled");
                 color = EnumChatFormatting.GREEN;
             } else {
-                statusName = "Disabled";
+                statusName = ClientLanguage.ui("Disabled");
                 color = EnumChatFormatting.RED;
             }
 
             // 发送消息：[Meow] KillAura was Enabled
-            ClientUtil.sendClientMessage(String.format("%s%s %swas %s%s",
-                    EnumChatFormatting.AQUA, mod.getName(), // 模块名 (蓝色)
-                    EnumChatFormatting.GRAY,                // 连接词 (灰色)
-                    color, statusName                       // 状态 (红/绿)
-            ));
+            ClientUtil.sendClientMessage(EnumChatFormatting.AQUA + ClientLanguage.module(mod)
+                    + " " + color + statusName);
 
         } else {
             // 模块不存在
-            ClientUtil.sendClientMessage("Module '" + EnumChatFormatting.RED + modName + EnumChatFormatting.GRAY + "' not found!");
+            ClientUtil.sendClientMessage(ClientLanguage.ui("Module not found") + ": "
+                    + EnumChatFormatting.RED + modName);
         }
     }
 }

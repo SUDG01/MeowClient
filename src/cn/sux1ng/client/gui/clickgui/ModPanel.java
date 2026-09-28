@@ -3,6 +3,8 @@ package cn.sux1ng.client.gui.clickgui;
 import cn.sux1ng.client.MeowClient;
 import cn.sux1ng.client.mod.Mod;
 import cn.sux1ng.client.mod.mods.draw.ClickGUIMod;
+import cn.sux1ng.client.ui.ClientLanguage;
+import cn.sux1ng.client.ui.MeowTheme;
 import cn.sux1ng.client.util.DrawUtil;
 import cn.sux1ng.client.util.animation.Animation;
 import cn.sux1ng.client.util.animation.Easing;
@@ -12,17 +14,15 @@ import net.minecraft.client.gui.FontRenderer;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-
 public class ModPanel {
     public Mod mod;
     public int x, y, width;
-    public int height = 20;
+    public int height = 22;
     public int finalHeight;
 
     public boolean extended = false;
     private boolean binding = false;
+    private TextValue editingText;
 
     private final Animation hoverAnim = new Animation(Easing.EASE_OUT_CUBIC, 200);
     private final Animation expandAnim = new Animation(Easing.EASE_IN_OUT_CUBIC, 250);
@@ -36,21 +36,34 @@ public class ModPanel {
         hoverAnim.run(hovered ? 1.0 : 0.0);
         double hp = hoverAnim.getValue();
 
-        int bgColor = mod.isEnable() ? 0xFFFFB7B2 : ((112 + (int)(30 * hp)) << 24);
-        DrawUtil.drawRoundedRect(x + 1, y, width - 2, height, 4, bgColor);
+        MeowTheme.Palette theme = MeowTheme.current();
+        int bgColor = mod.isEnable() ? theme.accentSoft
+                : hp > 0.1 ? theme.hover : theme.card;
+        DrawUtil.drawRoundedRect(x + 1, y + 2, width - 2, height - 2, 6, bgColor);
+        if (mod.isEnable()) DrawUtil.drawRoundedRect(x + 3, y + 6, 2, height - 10, 1, theme.accent);
 
         FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
-        int textColor = mod.isEnable() ? 0xFFFFFFFF : 0xFFCCCCCC;
-        String text = binding ? "Press Key..." : mod.getName();
-        if (mod.getKey() != 0 && !binding) text += " [" + Keyboard.getKeyName(mod.getKey()) + "]";
-        fr.drawStringWithShadow(text, x + (width / 2f - fr.getStringWidth(text) / 2f),
+        int textColor = mod.isEnable() ? theme.text : theme.muted;
+        String text = binding ? ClientLanguage.ui("Press key...") : ClientLanguage.module(mod);
+        fr.drawStringWithShadow(fr.trimStringToWidth(text, width - 17), x + 9,
                 y + (height / 2f - fr.FONT_HEIGHT / 2f), textColor);
+        DrawUtil.drawCircle(x + width - 9, y + height / 2.0, 2.5,
+                mod.isEnable() ? theme.accent : theme.outline);
 
         finalHeight = height;
         expandAnim.run(extended ? 1.0 : 0.0);
 
-        if (extended && !mod.getValues().isEmpty()) {
+        if (extended) {
             int sy = y + height;
+            DrawUtil.drawRoundedRect(x + 1, sy, width - 2, 15, 4, theme.sidebar);
+            fr.drawStringWithShadow(ClientLanguage.ui("Bind") + ": " + ClientLanguage.bindMode(mod.getBindMode()),
+                    x + 5, sy + 4, theme.text);
+            sy += 15;
+            DrawUtil.drawRoundedRect(x + 1, sy, width - 2, 15, 4, theme.sidebar);
+            String key = binding ? ClientLanguage.ui("Press key...") : Keyboard.getKeyName(mod.getKey());
+            fr.drawStringWithShadow(fr.trimStringToWidth(ClientLanguage.ui("Key") + ": " + key, width - 10),
+                    x + 5, sy + 4, theme.muted);
+            sy += 15;
             for (Value<?> value : mod.getValues()) {
                 if (!value.isVisible()) continue;
                 sy = renderSingleValue(value, sy, fr, mouseX, mouseY);
@@ -60,14 +73,15 @@ public class ModPanel {
     }
 
     private int renderSingleValue(Value<?> value, int sy, FontRenderer fr, int mx, int my) {
-        int bg = 0xFF202020;
+        MeowTheme.Palette theme = MeowTheme.current();
+        int bg = theme.sidebar;
         int sh = 15;
 
         // --- ValueGroup ---
         if (value instanceof ValueGroup) {
             ValueGroup g = (ValueGroup) value;
-            DrawUtil.drawRect(x, sy, width, 12, 0xFF2A2A2A);
-            fr.drawStringWithShadow("§l" + g.getName(), x + 4, sy + 2, 0xFFFFFF88);
+            DrawUtil.drawRoundedRect(x + 1, sy, width - 2, 12, 3, theme.card);
+            fr.drawStringWithShadow("§l" + ClientLanguage.value(g), x + 5, sy + 2, theme.secondary);
             sy += 12;
             for (Value<?> child : g.getChildren()) {
                 if (!child.isVisible()) continue;
@@ -76,75 +90,85 @@ public class ModPanel {
             return sy;
         }
 
-        DrawUtil.drawRect(x, sy, width, sh, bg);
+        DrawUtil.drawRoundedRect(x + 1, sy, width - 2, sh, 3, bg);
 
         // --- NumberValue ---
         if (value instanceof NumberValue) {
             NumberValue num = (NumberValue) value;
             double cur = num.getValue();
-            double tw = (width - 8) * (cur - num.getMin()) / (num.getMax() - num.getMin());
-            DrawUtil.drawRoundedRect(x + 4, sy + sh - 5, width - 8, 2, 1, 0xFF404040);
-            DrawUtil.drawRoundedRect(x + 4, sy + sh - 5, (int) tw, 2, 1, 0xFFFFB7B2);
-            DrawUtil.drawCircle(x + 4 + tw, sy + sh - 4, 3, 0xFFFFFFFF);
-            fr.drawStringWithShadow(num.getName() + ": " + num.getValue(), x + 4, sy + 2, 0xFFFFFFFF);
+            double range = num.getMax() - num.getMin();
+            double tw = range == 0 ? width - 10 : (width - 10) * (cur - num.getMin()) / range;
+            DrawUtil.drawRoundedRect(x + 5, sy + sh - 4, width - 10, 2, 1, theme.outline);
+            DrawUtil.drawRoundedRect(x + 5, sy + sh - 4, tw, 2, 1, theme.accent);
+            fr.drawStringWithShadow(fr.trimStringToWidth(ClientLanguage.value(num) + ": " + num.getValue(), width - 10),
+                    x + 5, sy + 2, theme.text);
             if (Mouse.isButtonDown(0) && isHovered(mx, my, x, sy, width, sh)) {
                 double pct = (mx - (x + 4)) / (double)(width - 8);
                 double val = num.getMin() + (num.getMax() - num.getMin()) * Math.max(0, Math.min(1, pct));
-                num.setValue(new BigDecimal(val).setScale(1, RoundingMode.HALF_UP).doubleValue());
+                num.setValue(val);
             }
         }
         // --- BooleanValue ---
         else if (value instanceof BooleanValue) {
             BooleanValue bool = (BooleanValue) value;
-            fr.drawStringWithShadow(bool.getName(), x + 4, sy + 4, 0xFFFFFFFF);
+            fr.drawStringWithShadow(fr.trimStringToWidth(ClientLanguage.value(bool), width - 30),
+                    x + 5, sy + 4, theme.text);
             int swX = x + width - 24, swY = sy + 3;
-            DrawUtil.drawRoundedRect(swX, swY, 20, 10, 5, bool.getValue() ? 0xFFFFB7B2 : 0xFF555555);
-            DrawUtil.drawCircle(bool.getValue() ? swX + 15 : swX + 5, swY + 5, 4, 0xFFFFFFFF);
+            DrawUtil.drawRoundedRect(swX, swY, 20, 10, 5, bool.getValue() ? theme.accentSoft : theme.card);
+            DrawUtil.drawCircle(bool.getValue() ? swX + 15 : swX + 5, swY + 5, 3, theme.text);
         }
         // --- ModeValue ---
         else if (value instanceof ModeValue) {
             ModeValue mode = (ModeValue) value;
-            fr.drawStringWithShadow(mode.getName(), x + 4, sy + 4, 0xFFFFFFFF);
-            String mt = mode.getValue();
-            fr.drawStringWithShadow(mt, x + width - fr.getStringWidth(mt) - 5, sy + 4, 0xFFFFFF00);
+            String label = ClientLanguage.value(mode) + ": " + ClientLanguage.mode(mode);
+            fr.drawStringWithShadow(fr.trimStringToWidth(label, width - 10), x + 5, sy + 4, theme.text);
         }
         // --- ColorValue ---
         else if (value instanceof ColorValue) {
             ColorValue cv = (ColorValue) value;
-            fr.drawStringWithShadow(cv.getName(), x + 4, sy + 4, 0xFFFFFFFF);
+            fr.drawStringWithShadow(fr.trimStringToWidth(ClientLanguage.value(cv), width - 29),
+                    x + 5, sy + 4, theme.text);
             int cbX = x + width - 16;
             DrawUtil.drawRoundedRect(cbX, sy + 2, 12, 10, 2, cv.getRGB());
-            DrawUtil.drawRect(cbX - 1, sy + 1, 14, 1, 0xFFFFFFFF);
-            DrawUtil.drawRect(cbX - 1, sy + 11, 14, 1, 0xFFFFFFFF);
-            DrawUtil.drawRect(cbX - 1, sy + 1, 1, 12, 0xFFFFFFFF);
-            DrawUtil.drawRect(cbX + 12, sy + 1, 1, 12, 0xFFFFFFFF);
+            DrawUtil.drawRoundedOutline(cbX - 1, sy + 1, 14, 12, 3, 1, theme.text);
         }
         // --- TextValue ---
         else if (value instanceof TextValue) {
             TextValue tv = (TextValue) value;
-            fr.drawStringWithShadow(tv.getName() + ": §7" + tv.getValue(), x + 4, sy + 4, 0xFFFFFFAA);
+            String text = ClientLanguage.value(tv) + ": " + tv.getValue() + (editingText == tv ? "|" : "");
+            fr.drawStringWithShadow(fr.trimStringToWidth(text, width - 10), x + 5, sy + 4, theme.text);
         }
         return sy + sh;
     }
 
     public void mouseClicked(int mouseX, int mouseY, int mouseButton) {
+        editingText = null;
         if (isHovered(mouseX, mouseY, x, y, width, height)) {
             if (mouseButton == 0) {
                 Mod clickGUIMod = MeowClient.modManager.getByClass(ClickGUIMod.class);
                 if (mod != clickGUIMod) {
                     mod.setEnable(!mod.isEnable());
-                    Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
                 }
             } else if (mouseButton == 2) {
                 this.binding = !this.binding;
             } else if (mouseButton == 1) {
                 this.extended = !this.extended;
-                Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
             }
             return;
         }
-        if (this.extended && !mod.getValues().isEmpty()) {
+        if (this.extended) {
             int sy = y + height;
+            if (isHovered(mouseX, mouseY, x, sy, width, 15) && mouseButton == 0) {
+                Mod.BindMode[] modes = Mod.BindMode.values();
+                mod.setBindMode(modes[(mod.getBindMode().ordinal() + 1) % modes.length]);
+                return;
+            }
+            sy += 15;
+            if (isHovered(mouseX, mouseY, x, sy, width, 15) && mouseButton == 0) {
+                binding = true;
+                return;
+            }
+            sy += 15;
             for (Value<?> value : mod.getValues()) {
                 if (!value.isVisible()) continue;
                 if (value instanceof ValueGroup) {
@@ -166,28 +190,46 @@ public class ModPanel {
         if (isHovered(mx, my, x, sy, width, sh)) {
             if (value instanceof BooleanValue && mb == 0) {
                 ((BooleanValue) value).setValue(!((BooleanValue) value).getValue());
-                Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
             } else if (value instanceof ModeValue && mb == 0) {
                 ((ModeValue) value).cycle();
-                Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
             } else if (value instanceof ColorValue && mb == 0) {
                 ColorValue cv = (ColorValue) value;
-                cv.setHue((cv.getHue() + 0.05f) % 1.0f);
-                Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
+                if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
+                    cv.setAlpha((cv.getAlpha() + 32) % 256);
+                } else {
+                    cv.setHue((cv.getHue() + 0.05f) % 1.0f);
+                }
             } else if (value instanceof ColorValue && mb == 1) {
                 ColorValue cv = (ColorValue) value;
                 cv.setSaturation(cv.getSaturation() >= 0.9f ? 0.3f : cv.getSaturation() + 0.2f);
-                Minecraft.getMinecraft().thePlayer.playSound("gui.button.press", 1, 1);
+            } else if (value instanceof ColorValue && mb == 2) {
+                ColorValue cv = (ColorValue) value;
+                cv.setBrightness(cv.getBrightness() >= 0.9f ? 0.3f : cv.getBrightness() + 0.2f);
+            } else if (value instanceof TextValue && mb == 0) {
+                editingText = (TextValue) value;
             }
         }
         return sy + sh;
     }
 
-    public void keyTyped(char typedChar, int keyCode) {
+    public boolean keyTyped(char typedChar, int keyCode) {
         if (this.binding) {
             mod.setKey(keyCode == Keyboard.KEY_ESCAPE || keyCode == Keyboard.KEY_DELETE ? 0 : keyCode);
             this.binding = false;
+            return true;
         }
+        if (editingText != null) {
+            if (keyCode == Keyboard.KEY_ESCAPE || keyCode == Keyboard.KEY_RETURN) {
+                editingText = null;
+            } else if (keyCode == Keyboard.KEY_BACK) {
+                String value = editingText.getValue();
+                if (!value.isEmpty()) editingText.setValue(value.substring(0, value.length() - 1));
+            } else if (typedChar >= 32 && typedChar != 127 && editingText.getValue().length() < 80) {
+                editingText.setValue(editingText.getValue() + typedChar);
+            }
+            return true;
+        }
+        return false;
     }
 
     public void mouseReleased(int mouseX, int mouseY, int state) {}

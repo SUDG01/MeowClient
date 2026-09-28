@@ -1,13 +1,12 @@
 package cn.sux1ng.client.ui.notification;
 
+import cn.sux1ng.client.ui.MeowTheme;
 import cn.sux1ng.client.util.DrawUtil;
 import cn.sux1ng.client.util.animation.Animation;
 import cn.sux1ng.client.util.animation.Easing;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
-
-import java.awt.Color;
 
 public class Notification {
     private final String description;
@@ -18,7 +17,7 @@ public class Notification {
 
     private float y;
     private float width;
-    private final float height = 32;
+    private final float height = 36;
     private boolean isExiting = false;
     private final Minecraft mc = Minecraft.getMinecraft();
 
@@ -34,7 +33,8 @@ public class Notification {
         this.start = System.currentTimeMillis();
 
         FontRenderer fr = mc.fontRendererObj;
-        this.width = Math.max(fr.getStringWidth(title), fr.getStringWidth(description)) + 50;
+        this.width = Math.max(138, Math.max(fr.getStringWidth(title),
+                fr.getStringWidth(description)) + 49);
         ScaledResolution sr = new ScaledResolution(mc);
         this.animX = sr.getScaledWidth();
     }
@@ -75,31 +75,21 @@ public class Notification {
 
         float x = animX;
 
-        // 阴影层
-        DrawUtil.drawRoundedRect(x + 2, y + 2, width, height, 6, new Color(0, 0, 0, 80).getRGB());
+        MeowTheme.Palette theme = MeowTheme.current();
+        int typeColor = type == NotificationType.ERROR ? 0xFFE592AD
+                : type == NotificationType.WARNING ? theme.secondary : theme.accent;
+        DrawUtil.drawRoundedRect(x + 2, y + 3, width, height, 8, 0x55000000);
+        DrawUtil.drawRoundedRect(x, y, width, height, 8, theme.surface);
+        DrawUtil.drawRoundedOutline(x, y, width, height, 8, 1, theme.outline);
+        DrawUtil.drawCircle(x + 17, y + 17, 8, typeColor);
+        DrawUtil.drawCircle(x + 17, y + 17, 3, theme.surface);
+        fr.drawStringWithShadow(title, x + 32, y + 6, theme.text);
+        fr.drawString(description, (int) (x + 32), (int)(y + 20), theme.muted);
 
-        // 主体背景 — 圆角
-        DrawUtil.drawRoundedRect(x, y, width, height, 6, new Color(20, 20, 20, 220).getRGB());
-
-        // 左侧色条
-        int typeColor = type.getColor().getRGB();
-        DrawUtil.drawRoundedRect(x + 2, y + 4, 3, height - 8, 2, typeColor);
-
-        // 圆形图标
-        DrawUtil.drawCircle(x + 14, y + height / 2, 7, typeColor);
-        fr.drawStringWithShadow(type.getIcon(), x + 11, y + height / 2 - fr.FONT_HEIGHT / 2, 0xFFFFFFFF);
-
-        // 标题
-        fr.drawStringWithShadow(title, x + 26, y + 4, 0xFFFFFFFF);
-
-        // 描述
-        fr.drawString(description, (int) (x + 26), (int)(y + 18), new Color(200, 200, 200).getRGB());
-
-        // 进度条 — 圆角
         float progress = 1.0f - (float) timeElapsed / duration;
         progress = Math.max(0, Math.min(1, progress));
-        float barWidth = (width - 6) * progress;
-        DrawUtil.drawRoundedRect(x + 3, y + height - 4, barWidth, 2, 1, typeColor);
+        float barWidth = (width - 14) * progress;
+        DrawUtil.drawRoundedRect(x + 7, y + height - 4, barWidth, 2, 1, typeColor);
     }
 
     public boolean shouldDelete() {

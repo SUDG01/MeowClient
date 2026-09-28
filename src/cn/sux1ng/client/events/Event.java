@@ -3,7 +3,7 @@ package cn.sux1ng.client.events;
 public abstract class Event {
     private boolean cancelled;
 
-    // 只有部分事件(如发包)需要取消，Update事件通常不需要
+    // Cancellation only takes effect when the source hook checks this flag (for example, packet hooks).
     public boolean isCancelled() {
         return cancelled;
     }

@@ -3,6 +3,8 @@ package cn.sux1ng.client.mod.mods.draw;
 import cn.sux1ng.client.MeowClient;
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
+import cn.sux1ng.client.ui.ClientLanguage;
+import cn.sux1ng.client.ui.MeowTheme;
 import cn.sux1ng.client.util.ColorUtil;
 import cn.sux1ng.client.value.BooleanValue;
 import cn.sux1ng.client.value.ColorValue;
@@ -19,14 +21,14 @@ import java.util.List;
 public class ArrayListMod extends Mod {
 
     // 1. 颜色模式
-    public ModeValue colorMode = new ModeValue("ColorMode", "Rainbow", new String[]{"Rainbow", "Astolfo", "Pulse", "Static"});
+    public ModeValue colorMode = new ModeValue("ColorMode", "Static", new String[]{"Rainbow", "Astolfo", "Pulse", "Static"});
 
     // 2. 视觉开关
     public BooleanValue background = new BooleanValue("Background", true);
     public BooleanValue sidebar = new BooleanValue("Sidebar", true);
 
     // 3. 静态/Pulse 颜色 — 使用 ColorValue 替代 R/G/B 三滑块
-    public ColorValue staticColor = new ColorValue("StaticColor", new Color(255, 105, 180))
+    public ColorValue staticColor = new ColorValue("StaticColor", new Color(246, 175, 203))
             .setVisibility(() -> colorMode.is("Static") || colorMode.is("Pulse"));
 
     public ArrayListMod() {
@@ -75,7 +77,9 @@ public class ArrayListMod extends Mod {
 
             // 圆角背景
             if (background.getValue()) {
-                cn.sux1ng.client.util.DrawUtil.drawRoundedRect(x - 3, y - 1, sr.getScaledWidth() - x + 3, height, 3, 0x60000000);
+                cn.sux1ng.client.util.DrawUtil.drawRoundedRect(x - 4, y - 1,
+                        sr.getScaledWidth() - x + 3, height, 4,
+                        MeowTheme.withAlpha(MeowTheme.current().surface, 170));
             }
 
             // 圆角侧边条
@@ -89,7 +93,6 @@ public class ArrayListMod extends Mod {
             y += height;
             count++;
         }
-        cn.sux1ng.client.events.EventManager.call(new cn.sux1ng.client.events.EventRender2D(1.0F));
     }
 
     private int getWidth(Mod mod) {
@@ -99,8 +102,8 @@ public class ArrayListMod extends Mod {
     private String getDisplayName(Mod mod) {
         String suffix = mod.getSuffix();
         if (suffix != null && !suffix.isEmpty()) {
-            return mod.getName() + " §7" + suffix;
+            return ClientLanguage.module(mod) + " §7" + ClientLanguage.option(suffix);
         }
-        return mod.getName();
+        return ClientLanguage.module(mod);
     }
 }

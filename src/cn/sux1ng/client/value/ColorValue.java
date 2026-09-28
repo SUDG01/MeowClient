@@ -83,6 +83,12 @@ public class ColorValue extends Value<Integer> {
         syncRGB();
     }
 
+    @Override
+    public void setValue(Integer rgb) {
+        if (rgb == null) throw new IllegalArgumentException("Color cannot be null");
+        setColor(new Color(rgb, true));
+    }
+
     // ========== HSB 组件操作 ==========
 
     public float getHue() { return hue; }
@@ -113,7 +119,7 @@ public class ColorValue extends Value<Integer> {
      * 同步 RGB int 到父类的 value
      */
     private void syncRGB() {
-        setValue(getColor().getRGB());
+        super.setValue(getColor().getRGB());
     }
 
     // ========== 链式调用 ==========

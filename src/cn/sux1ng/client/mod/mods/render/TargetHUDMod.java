@@ -4,6 +4,8 @@ import cn.sux1ng.client.MeowClient;
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
 import cn.sux1ng.client.mod.mods.combat.KillAuraMod;
+import cn.sux1ng.client.ui.ClientLanguage;
+import cn.sux1ng.client.ui.MeowTheme;
 import cn.sux1ng.client.util.DrawUtil;
 import cn.sux1ng.client.value.ModeValue;
 import cn.sux1ng.client.value.NumberValue;
@@ -48,20 +50,22 @@ public class TargetHUDMod extends Mod {
     }
 
     private void renderNeon(EntityLivingBase target) {
+        MeowTheme.Palette theme = MeowTheme.current();
         float startX = x.getValue().floatValue();
         float startY = y.getValue().floatValue();
         float width = 140;
         float height = 48;
 
         // 阴影
-        DrawUtil.drawRoundedRect(startX + 2, startY + 2, width, height, 8, new Color(0, 0, 0, 80).getRGB());
+        DrawUtil.drawRoundedRect(startX + 2, startY + 3, width, height, 8, 0x55000000);
 
         // 背景 — 圆角 + 微渐变
-        DrawUtil.drawRoundedRect(startX, startY, width, height, 8, new Color(0, 0, 0, 180).getRGB());
+        DrawUtil.drawRoundedRect(startX, startY, width, height, 8, theme.surface);
+        DrawUtil.drawRoundedOutline(startX, startY, width, height, 8, 1, theme.outline);
 
         // 顶部 accent 渐变
         DrawUtil.drawGradientHorizontal(startX + 4, startY, width - 8, 2,
-                0xFFFFB7B2, cn.sux1ng.client.util.ColorUtil.applyOpacity(0xFFFFB7B2, 0.2f));
+                theme.accent, theme.secondary);
 
         // 3D 头像
         GlStateManager.color(1, 1, 1, 1);
@@ -70,12 +74,12 @@ public class TargetHUDMod extends Mod {
         } catch (Exception e) {}
 
         // 名字
-        mc.fontRendererObj.drawStringWithShadow(target.getName(), startX + 42, startY + 8, -1);
+        mc.fontRendererObj.drawStringWithShadow(target.getName(), startX + 42, startY + 8, theme.text);
 
         // 血量
         DecimalFormat df = new DecimalFormat("0.0");
-        String hpStr = df.format(target.getHealth()) + " HP";
-        mc.fontRendererObj.drawStringWithShadow(hpStr, startX + 42, startY + 20, new Color(255, 255, 255).getRGB());
+        String hpStr = df.format(target.getHealth()) + (ClientLanguage.isChinese() ? " 生命" : " HP");
+        mc.fontRendererObj.drawStringWithShadow(hpStr, startX + 42, startY + 20, theme.muted);
 
         // 平滑血条
         float health = target.getHealth();
@@ -85,7 +89,7 @@ public class TargetHUDMod extends Mod {
         hpWidth += (targetWidth - hpWidth) * 0.12;  // 平滑
 
         // 血条背景
-        DrawUtil.drawRoundedRect(startX + 42, startY + 34, width - 50, 5, 2.5, new Color(50, 50, 50).getRGB());
+        DrawUtil.drawRoundedRect(startX + 42, startY + 34, width - 50, 5, 2.5, theme.outline);
         // 血条前景
         int color = getHealthColor(health, maxHealth);
         DrawUtil.drawRoundedRect(startX + 42, startY + 34, hpWidth, 5, 2.5, color);
@@ -96,8 +100,10 @@ public class TargetHUDMod extends Mod {
         float startY = y.getValue().floatValue();
         String text = target.getName() + " §c" + (int)target.getHealth() + "❤";
         int strWidth = mc.fontRendererObj.getStringWidth(text);
-        DrawUtil.drawRoundedRect(startX - 3, startY - 3, strWidth + 10, 15, 4, new Color(0, 0, 0, 130).getRGB());
-        mc.fontRendererObj.drawStringWithShadow(text, startX + 2, startY, -1);
+        DrawUtil.drawRoundedRect(startX - 3, startY - 3, strWidth + 10, 15, 4,
+                MeowTheme.current().surface);
+        mc.fontRendererObj.drawStringWithShadow(text, startX + 2, startY,
+                MeowTheme.current().text);
     }
 
     private int getHealthColor(float health, float maxHealth) {
