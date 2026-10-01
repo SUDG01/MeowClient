@@ -31,6 +31,7 @@ public class MeowClient {
         modManager.load();
         clickGUI = new ClickGUI();
         configManager.load();
+        cn.sux1ng.client.input.HighPollingInput.start();
         commandManager.load();
 
         // 【关键修改 2】现在 instance 存在了，可以注册了！
@@ -41,6 +42,7 @@ public class MeowClient {
     }
 
     public static void stop(){
+        cn.sux1ng.client.input.HighPollingInput.stop();
         if (configManager != null){
             configManager.save();
         }

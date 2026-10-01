@@ -1,0 +1,9 @@
+diff --git a/src/net/minecraft/client/Minecraft.java b/src/net/minecraft/client/Minecraft.java
+--- a/src/net/minecraft/client/Minecraft.java
++++ b/src/net/minecraft/client/Minecraft.java
+@@ -1115,4 +1115,5 @@
+     private void runGameLoop() throws IOException
+     {
++        cn.sux1ng.client.input.HighPollingInput.beginFrame(this);
+         long i = System.nanoTime();
+         this.mcProfiler.startSection("root");

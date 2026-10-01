@@ -41,6 +41,8 @@ AutoClicker 旧的 “Blatant” 参数现显示为 **BlockHit**；旧配置仍�
 
 ## R6 新功能
 
+- **原始鼠标输入**：ClientSetting 中默认开启 RawInput。Windows 使用独立的鼠标原始输入接收与批量读取，保留硬件相对位移，避免系统加速与窗口边界影响视角；灵敏度、反转鼠标和缩放操作继续使用原版设置。失焦或打开菜单时清空待处理位移，切回游戏时不会重放旧输入。后端不可用或收到绝对坐标输入时回退到标准输入。
+- **高回报率事件处理**：扩大 LWJGL 鼠标缓冲；锁定视角时合并处理冗余移动事件，保留按键与滚轮顺序，并在帧开始时获取输入。软件回放覆盖 1k、2k、4k、8k、16k 和 32k Hz，实际设备表现仍需实鼠验证。
 - **Trajectories / 弹道预览**：显示弓箭、末影珍珠、雪球和鸡蛋的预计轨迹，考虑重力、空气/水中阻力、方块与实体碰撞，并标出预计落点。持弓未蓄力时默认预览满弦；开始蓄力后按实际蓄力时间计算。
 - **HUD 编辑器**：在 ClientSetting 点击圆形画笔按钮，编辑 Logo、InfoHUD、ArrayList、ArmorHUD、TargetHUD 与 Tab。左键拖动，滚轮缩放，右键切换显示；Tab 切换选中组件，方向键微调，Shift 吸附到 5 像素间距，Delete 重置选中组件。布局和缩放随 Client.json 保存，位置按可用屏幕空间适配分辨率；点击「完成」或 Esc 返回设置页。
 - **TNTTimer / TNT 倒计时**：在附近已点燃的 TNT 上方显示剩余秒数，最后一秒改变颜色；以客户端的引信 tick、每秒 20 tick 换算。
@@ -70,7 +72,7 @@ AutoClicker 旧的 “Blatant” 参数现显示为 **BlockHit**；旧配置仍�
 - 仓库 `lib/` 下的 JAR 依赖
 
 1. 将匹配 R4 的 MCP 源码放入 `src/net/minecraft`。该目录及本地游戏运行目录 `jars/` 被 Git 忽略。
-2. **从干净的 R4 MCP 源码开始**，依次执行 `git apply patches/r5-mcp-hooks.patch` 与 `git apply patches/r6-mcp-hooks.patch`。如果源码已经是 R5，只应用 R6 补丁。当前开发工作区中的钩子已经应用，无需重复执行。
+2. **从干净的 R4 MCP 源码开始**，依次执行 `git apply patches/r5-mcp-hooks.patch`、`git apply patches/r6-mcp-hooks.patch` 与 `git apply patches/r6-input-hooks.patch`。如果源码已经是初版 R6，只应用输入补丁。当前开发工作区中的钩子已经应用，无需重复执行。
 3. 在 IntelliJ 中把 `src/`、`resources/`、`test/` 分别设为源码、资源、测试源码目录，SDK 设为 JDK 8，并把 `lib/` 的 JAR 加入类路径。
 4. 准备 Minecraft assets 后运行 `test/Start.java`。
 
@@ -98,6 +100,8 @@ AutoClicker 旧的 “Blatant” 参数现显示为 **BlockHit**；旧配置仍�
 | `src/cn/sux1ng/client/config/` | 模块及客户端设置保存 |
 | `patches/r5-mcp-hooks.patch` | 被忽略的 MCP 源码中的事件与渲染钩子改动 |
 | `patches/r6-mcp-hooks.patch` | 在 R5 基础上补充攻击、跳跃、夜视及 HUD 布局钩子 |
+| `patches/r6-input-hooks.patch` | 帧开始时获取输入的补充钩子 |
+| `src/cn/sux1ng/client/input/` | 原始鼠标输入、焦点隔离及鼠标事件缓冲 |
 | `src/cn/sux1ng/client/util/RenderState.java` | 视觉效果使用的矩阵与 OpenGL 状态恢复 |
 
 接收包事件在 Netty 线程同步触发；监听器如需修改世界或 GUI，需自行安排到 Minecraft 主线程执行。

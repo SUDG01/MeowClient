@@ -423,8 +423,12 @@ public class R6RenderRegressionTest {
                 mc.displayGuiScreen(settings);
                 overlay(); settings.drawScreen(0, 0, 1); saveFrame("client-settings");
                 int uiSize = new net.minecraft.client.gui.ScaledResolution(mc).getScaledWidth();
-                int panelWidth = Math.min(384, uiSize - 30), left = (uiSize - panelWidth) / 2, top = (uiSize - 198) / 2;
-                settings.click(left + panelWidth - 62, top + 170);
+                int panelWidth = Math.min(384, uiSize - 30), left = (uiSize - panelWidth) / 2, top = (uiSize - 226) / 2;
+                boolean rawBefore = cn.sux1ng.client.input.HighPollingInput.isEnabled();
+                settings.click(left + 32, top + 137);
+                require(cn.sux1ng.client.input.HighPollingInput.isEnabled() != rawBefore, "raw input toggle did not change");
+                settings.click(left + 32, top + 137);
+                settings.click(left + panelWidth - 62, top + 195);
                 require(mc.currentScreen instanceof HudEditorScreen, "paintbrush did not open the HUD editor");
                 overlay(); mc.currentScreen.drawScreen(0, 0, 1); saveFrame("hud-editor");
                 TestHud editor = new TestHud(settings); mc.displayGuiScreen(editor);
@@ -438,7 +442,7 @@ public class R6RenderRegressionTest {
                 editor.key(Keyboard.KEY_DELETE);
                 require(HudLayout.transform("Logo", original, uiSize, uiSize).x == original.x, "HUD reset did not restore the original placement");
                 mc.displayGuiScreen(settings);
-                settings.click(left + panelWidth - 28, top + 170);
+                settings.click(left + panelWidth - 28, top + 195);
                 require(mc.currentScreen instanceof KeyBindingsScreen, "keyboard icon did not open binding management");
                 TestBindings bindings = new TestBindings(settings); mc.displayGuiScreen(bindings);
                 int bindingLeft = (uiSize - Math.min(520, uiSize - 24)) / 2;

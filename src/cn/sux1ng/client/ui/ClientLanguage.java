@@ -71,6 +71,8 @@ public final class ClientLanguage {
             "CSGO(Gamesense)", "边框", "Sense", "简约");
 
     private static final Map<String, String> UI = pairs(
+            "Raw mouse input", "原始鼠标输入", "Unaccelerated relative motion", "使用原始位移，避免系统加速",
+            "Standard input fallback", "当前使用标准输入",
             "HUD editor", "HUD 编辑器", "Key bindings", "按键管理", "Reset all", "全部重置",
             "Reset", "重置", "Done", "完成", "Conflict", "按键冲突", "None", "无",
             "Drag to move · Scroll to scale · Right click to toggle", "拖动调整位置 · 滚轮缩放 · 右键切换显示",
