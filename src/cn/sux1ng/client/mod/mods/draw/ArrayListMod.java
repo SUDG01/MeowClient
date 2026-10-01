@@ -99,7 +99,7 @@ public class ArrayListMod extends Mod {
         return Minecraft.getMinecraft().fontRendererObj.getStringWidth(getDisplayName(mod));
     }
 
-    private String getDisplayName(Mod mod) {
+    public String getDisplayName(Mod mod) {
         String suffix = mod.getSuffix();
         if (suffix != null && !suffix.isEmpty()) {
             return ClientLanguage.module(mod) + " §7" + ClientLanguage.option(suffix);

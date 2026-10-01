@@ -2,6 +2,7 @@ package cn.sux1ng.client.mod.mods.render;
 
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
+import cn.sux1ng.client.util.RenderState;
 import cn.sux1ng.client.value.BooleanValue;
 import cn.sux1ng.client.value.ColorValue;
 import cn.sux1ng.client.value.ModeValue;
@@ -17,7 +18,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.AxisAlignedBB;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
 
@@ -46,17 +46,17 @@ public class ESPMod extends Mod {
 
     @Override
     public void render(float partialTicks) {
-        if (mc.thePlayer == null || mc.theWorld == null) return;
+        if (mc == null || mc.thePlayer == null || mc.theWorld == null) return;
 
-        for (Entity entity : mc.theWorld.loadedEntityList) {
-            if (entity instanceof EntityPlayer && entity != mc.thePlayer) {
-                // 隐身玩家用红色，否则用自定义颜色
-                Color color = entity.isInvisible() ? invisibleColor.getColor() : visibleColor.getColor();
-
-                if (mode.is("Box3D")) {
-                    renderBox3D((EntityPlayer) entity, color, partialTicks);
-                } else if (mode.is("2D")) {
-                    renderBox2D((EntityPlayer) entity, color, partialTicks);
+        try (RenderState state = RenderState.capture()) {
+            for (Entity entity : mc.theWorld.loadedEntityList) {
+                if (entity instanceof EntityPlayer && entity != mc.thePlayer && !entity.isDead) {
+                    Color color = entity.isInvisible() ? invisibleColor.getColor() : visibleColor.getColor();
+                    if (mode.is("Box3D")) {
+                        renderBox3D((EntityPlayer) entity, color, partialTicks);
+                    } else if (mode.is("2D")) {
+                        renderBox2D((EntityPlayer) entity, color, partialTicks);
+                    }
                 }
             }
         }
@@ -76,26 +76,18 @@ public class ESPMod extends Mod {
         double height = entity.height + 0.1;
         AxisAlignedBB bb = new AxisAlignedBB(-width, 0, -width, width, height, width);
 
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthMask(false);
+        RenderState.setupWorldEffect();
         GL11.glLineWidth(1.5F);
 
         float r = color.getRed() / 255f;
         float g = color.getGreen() / 255f;
         float b = color.getBlue() / 255f;
-        GL11.glColor4f(r, g, b, 1.0F);
+        GlStateManager.color(r, g, b, color.getAlpha() / 255f);
 
         drawBoundingBox(bb);
 
-        GL11.glDepthMask(true);
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_BLEND);
         GL11.glPopMatrix();
-        GL11.glColor4f(1f, 1f, 1f, 1f);
+        GlStateManager.color(1f, 1f, 1f, 1f);
     }
 
     // ==================== 2D Box 逻辑 (CSGO Style) ====================
@@ -112,46 +104,33 @@ public class ESPMod extends Mod {
         double[] posTop = projectToScreen(x, topY, z);
         double[] posBot = projectToScreen(x, botY, z);
 
-        if (posTop == null || posBot == null) return;
+        if (posTop == null || posBot == null || posBot[1] <= posTop[1]) return;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.enableBlend();
-        GlStateManager.disableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        try (RenderState state = RenderState.capture()) {
+            RenderState.setupWorldEffect();
+            ScaledResolution sr = new ScaledResolution(mc);
+            GlStateManager.matrixMode(GL11.GL_PROJECTION);
+            GlStateManager.loadIdentity();
+            GlStateManager.ortho(0, sr.getScaledWidth_double(), sr.getScaledHeight_double(), 0, 1000, 3000);
+            GlStateManager.matrixMode(GL11.GL_MODELVIEW);
+            GlStateManager.loadIdentity();
+            GlStateManager.translate(0, 0, -2000);
 
-        mc.entityRenderer.setupOverlayRendering();
+            double topScreenY = posTop[1];
+            double botScreenY = posBot[1];
+            double height = botScreenY - topScreenY;
+            double width = height / 2.0;
+            double left = posTop[0] - width / 2.0;
+            double right = posTop[0] + width / 2.0;
+            drawRect(left, topScreenY, right, topScreenY + 1, color.getRGB());
+            drawRect(left, botScreenY - 1, right, botScreenY, color.getRGB());
+            drawRect(left, topScreenY, left + 1, botScreenY, color.getRGB());
+            drawRect(right - 1, topScreenY, right, botScreenY, color.getRGB());
 
-        double topScreenY = posTop[1];
-        double botScreenY = posBot[1];
-        double centerX = posTop[0];
-
-        double height = botScreenY - topScreenY;
-        double width = height / 2.0;
-
-        double left = centerX - width / 2.0;
-        double right = centerX + width / 2.0;
-
-        float r = color.getRed() / 255f;
-        float g = color.getGreen() / 255f;
-        float b = color.getBlue() / 255f;
-        GL11.glColor4f(r, g, b, 1.0F);
-
-        // 画空心框
-        drawRect(left, topScreenY, right, topScreenY + 1, color.getRGB());
-        drawRect(left, botScreenY - 1, right, botScreenY, color.getRGB());
-        drawRect(left, topScreenY, left + 1, botScreenY, color.getRGB());
-        drawRect(right - 1, topScreenY, right, botScreenY, color.getRGB());
-
-        // 装备显示
-        if (showArmor.getValue()) {
-            renderArmor(entity, (float)right + 2, (float)topScreenY, (float)height);
+            if (showArmor.getValue()) {
+                renderArmor(entity, (float)right + 2, (float)topScreenY, (float)height);
+            }
         }
-
-        GlStateManager.enableTexture2D();
-        GlStateManager.disableBlend();
-        GlStateManager.popMatrix();
-
-        GL11.glColor4f(1f, 1f, 1f, 1f);
     }
 
     // ==================== 装备显示逻辑 ====================
@@ -199,8 +178,8 @@ public class ESPMod extends Mod {
         if (result) {
             ScaledResolution sr = new ScaledResolution(mc);
             double screenX = screenCoords.get(0) / sr.getScaleFactor();
-            double screenY = (Display.getHeight() - screenCoords.get(1)) / sr.getScaleFactor();
-            if (screenCoords.get(2) > 1.0f) return null;
+            double screenY = (viewport.get(1) + viewport.get(3) - screenCoords.get(1)) / sr.getScaleFactor();
+            if (screenCoords.get(2) < 0.0f || screenCoords.get(2) > 1.0f) return null;
             return new double[]{screenX, screenY};
         }
         return null;

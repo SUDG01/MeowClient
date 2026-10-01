@@ -36,10 +36,9 @@ public class ClickGUI extends GuiScreen {
         MeowTheme.backdrop(width, height);
         handleScroll(mouseY);
         MeowTheme.panel(12, 10, width - 24, 34, 10);
-        MeowTheme.paw(29, 26, theme.accent);
-        fontRendererObj.drawStringWithShadow(MeowClient.NAME, 44, 19, theme.text);
+        fontRendererObj.drawStringWithShadow(MeowClient.NAME, 24, 19, theme.text);
         fontRendererObj.drawString(MeowClient.VERSION,
-                51 + fontRendererObj.getStringWidth(MeowClient.NAME), 19, theme.muted);
+                31 + fontRendererObj.getStringWidth(MeowClient.NAME), 19, theme.muted);
         if (maxScrollX() > 0) {
             int trackX = width - 102;
             DrawUtil.drawRoundedRect(trackX, 35, 82, 3, 1, theme.outline);

@@ -1,67 +1,51 @@
 package cn.sux1ng.client.mod.mods.render;
 
+import cn.sux1ng.client.events.EventTarget;
+import cn.sux1ng.client.events.impl.AttackEvent;
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
 import cn.sux1ng.client.value.ModeValue;
 import cn.sux1ng.client.value.NumberValue;
-import net.minecraft.client.Minecraft;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.EnumParticleTypes;
 
-/**
- * HitParticles — 攻击粒子
- * 攻击实体时在原版粒子系统刷出特效粒子
- */
-public class HitParticlesMod extends Mod {
+import java.util.Random;
 
+/** One configured particle burst per actual attack, including controller-driven attacks. */
+public class HitParticlesMod extends Mod {
     public ModeValue particleMode = new ModeValue("Effect", "Heart", new String[]{"Heart", "Flame", "Crit", "Slime", "Portal", "Smoke"});
     public NumberValue count = new NumberValue("Count", 10, 1, 50, 1);
+    private final Random random = new Random();
 
     public HitParticlesMod() {
         super("HitParticles", Category.RENDER);
         addValues(particleMode, count);
     }
 
-    @Override
-    public void render(float partialTicks) {
-        if (mc.thePlayer == null || mc.theWorld == null) return;
-
-        // 检测攻击：swingProgress 变化表示刚挥剑
-        if (mc.thePlayer.swingProgress > 0 && mc.thePlayer.swingProgress < 0.1f
-                && mc.objectMouseOver != null && mc.objectMouseOver.entityHit != null) {
-            spawnParticles(mc.objectMouseOver.entityHit.posX,
-                    mc.objectMouseOver.entityHit.posY + mc.objectMouseOver.entityHit.height / 2,
-                    mc.objectMouseOver.entityHit.posZ);
+    @EventTarget
+    public void onAttack(AttackEvent event) {
+        if (mc == null || mc.thePlayer == null || mc.theWorld == null || event.getPlayer() != mc.thePlayer) return;
+        Entity target = event.getTarget();
+        if (target == null || target.isDead || target.worldObj != mc.theWorld) return;
+        EnumParticleTypes type;
+        switch (particleMode.getValue()) {
+            case "Flame": type = EnumParticleTypes.FLAME; break;
+            case "Crit": type = EnumParticleTypes.CRIT; break;
+            case "Slime": type = EnumParticleTypes.SLIME; break;
+            case "Portal": type = EnumParticleTypes.PORTAL; break;
+            case "Smoke": type = EnumParticleTypes.SMOKE_LARGE; break;
+            default: type = EnumParticleTypes.HEART;
         }
-    }
-
-    private void spawnParticles(double x, double y, double z) {
-        String mode = particleMode.getValue();
-        int n = count.getValue().intValue();
-        for (int i = 0; i < n; i++) {
-            double ox = (Math.random() - 0.5) * 0.8;
-            double oy = Math.random() * 1.5;
-            double oz = (Math.random() - 0.5) * 0.8;
-
-            switch (mode) {
-                case "Heart":
-                    mc.theWorld.spawnParticle(EnumParticleTypes.HEART, x + ox, y + oy, z + oz, 0, 0.05, 0);
-                    break;
-                case "Flame":
-                    mc.theWorld.spawnParticle(EnumParticleTypes.FLAME, x + ox, y + oy, z + oz, 0, 0.02, 0);
-                    break;
-                case "Crit":
-                    mc.effectRenderer.emitParticleAtEntity(mc.objectMouseOver.entityHit, EnumParticleTypes.CRIT);
-                    break;
-                case "Slime":
-                    mc.theWorld.spawnParticle(EnumParticleTypes.SLIME, x + ox, y + oy, z + oz, 0, 0, 0);
-                    break;
-                case "Portal":
-                    mc.theWorld.spawnParticle(EnumParticleTypes.PORTAL, x + ox, y + oy, z + oz, Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
-                    break;
-                case "Smoke":
-                    mc.theWorld.spawnParticle(EnumParticleTypes.SMOKE_LARGE, x + ox, y + oy, z + oz, 0, 0.1, 0);
-                    break;
-            }
+        for (int i = 0; i < count.getValue().intValue(); i++) {
+            double spread = Math.max(0.25, target.width * 0.7);
+            double x = target.posX + (random.nextDouble() - 0.5) * spread;
+            double y = target.posY + target.height * (0.35 + random.nextDouble() * 0.5);
+            double z = target.posZ + (random.nextDouble() - 0.5) * spread;
+            double vx = (random.nextDouble() - 0.5) * 0.12;
+            double vy = 0.03 + random.nextDouble() * 0.06;
+            double vz = (random.nextDouble() - 0.5) * 0.12;
+            // Explicit client effects remain visible when vanilla particle detail is reduced.
+            mc.theWorld.spawnParticle(type, true, x, y, z, vx, vy, vz);
         }
     }
 }

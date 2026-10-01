@@ -30,8 +30,7 @@ public class TargetHUDMod extends Mod {
         addValues(x, y, style);
     }
 
-    @Override
-    public void draw() {
+    public EntityLivingBase getDisplayTarget() {
         KillAuraMod ka = (KillAuraMod) MeowClient.modManager.getByClass(KillAuraMod.class);
         EntityLivingBase target = null;
         if (ka != null && ka.isEnable()) {
@@ -40,6 +39,12 @@ public class TargetHUDMod extends Mod {
         if (target == null && mc.currentScreen != null) {
             target = mc.thePlayer;
         }
+        return target;
+    }
+
+    @Override
+    public void draw() {
+        EntityLivingBase target = getDisplayTarget();
         if (target == null) return;
 
         if (style.is("Neon")) {

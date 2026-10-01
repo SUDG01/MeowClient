@@ -32,10 +32,9 @@ public class LogoMod extends Mod {
         MeowTheme.Palette theme = MeowTheme.current();
 
         if (mode.is("Normal")) {
-            int width = font.getStringWidth(MeowClient.NAME) + font.getStringWidth(MeowClient.VERSION) + 42;
+            int width = font.getStringWidth(MeowClient.NAME) + font.getStringWidth(MeowClient.VERSION) + 26;
             MeowTheme.panel(left, top, width, 23, 8);
-            MeowTheme.paw(left + 12, top + 11, theme.accent);
-            font.drawStringWithShadow(MeowClient.NAME, left + 25, top + 7, theme.text);
+            font.drawStringWithShadow(MeowClient.NAME, left + 9, top + 7, theme.text);
             font.drawString(MeowClient.VERSION, left + width - font.getStringWidth(MeowClient.VERSION) - 9,
                     top + 7, theme.muted);
         } else if (mode.is("Sense")) {

@@ -1,18 +1,19 @@
 package cn.sux1ng.client.mod.mods.render;
 
+import cn.sux1ng.client.MeowClient;
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
 import cn.sux1ng.client.value.ModeValue;
 import cn.sux1ng.client.value.NumberValue;
-import net.minecraft.client.Minecraft;
 
 public class FullBrightMod extends Mod {
 
-    private final Minecraft mc = Minecraft.getMinecraft();
     private float oldGamma; // 保存原来的亮度
+    private boolean gammaSaved;
 
     // 亮度值
-    public NumberValue gamma = new NumberValue("Gamma", 16.0, 1.0, 16.0, 1.0);
+    public NumberValue gamma = new NumberValue("Gamma", 16.0, 1.0, 16.0, 1.0)
+            .setVisibility(() -> this.mode.is("Gamma"));
     // 亮度模式
     public ModeValue mode = new ModeValue("Mode", "Gamma", new String[]{"Gamma", "NightVision"});
 
@@ -22,25 +23,33 @@ public class FullBrightMod extends Mod {
     }
 
     @Override
-    public void setEnable(boolean enable) {
-        super.setEnable(enable);
-
-        if (enable) {
+    public void enable() {
+        if (mc != null && mc.gameSettings != null) {
             oldGamma = mc.gameSettings.gammaSetting;
-            mc.gameSettings.gammaSetting = gamma.getValue().floatValue();
-        } else {
-            mc.gameSettings.gammaSetting = oldGamma;
+            gammaSaved = true;
+            update();
         }
     }
 
     @Override
-    public void update() {
-        if (isEnable()) {
-            if (mode.is("Gamma")) {
-                mc.gameSettings.gammaSetting = gamma.getValue().floatValue();
-            }
-            // NightVision 模式：通过药水效果实现，此处通过 gamma 保持整体亮度
-            // 完整实现需要注入 PotionEffect，暂时使用 gamma 替代
+    public void disable() {
+        if (gammaSaved && mc != null && mc.gameSettings != null) {
+            mc.gameSettings.gammaSetting = oldGamma;
         }
+        gammaSaved = false;
+    }
+
+    @Override
+    public void update() {
+        if (gammaSaved && mc != null && mc.gameSettings != null) {
+            mc.gameSettings.gammaSetting = mode.is("Gamma") ? gamma.getValue().floatValue() : oldGamma;
+        }
+    }
+
+    /** Used by the vanilla lightmap and fog hooks; does not modify real potion effects. */
+    public static boolean isNightVisionActive() {
+        if (MeowClient.modManager == null) return false;
+        FullBrightMod mod = MeowClient.modManager.getByClass(FullBrightMod.class);
+        return mod != null && mod.isEnable() && mod.mode.is("NightVision");
     }
 }

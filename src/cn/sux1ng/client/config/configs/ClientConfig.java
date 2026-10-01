@@ -2,6 +2,7 @@ package cn.sux1ng.client.config.configs;
 
 import cn.sux1ng.client.config.Config;
 import cn.sux1ng.client.ui.ClientLanguage;
+import cn.sux1ng.client.ui.HudLayout;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -24,17 +25,20 @@ public class ClientConfig extends Config {
             loadFrom(getPath());
         } catch (IOException | RuntimeException failure) {
             ClientLanguage.setChinese(false);
+            HudLayout.resetAll();
             System.err.println("Client settings load failed: " + failure.getMessage());
         }
     }
 
     public void loadFrom(Path path) throws IOException {
         ClientLanguage.setChinese(false);
+        HudLayout.resetAll();
         if (!Files.exists(path)) return;
         JsonElement parsed = new JsonParser().parse(new String(Files.readAllBytes(path), StandardCharsets.UTF_8));
         if (parsed == null || !parsed.isJsonObject()) return;
         JsonObject object = parsed.getAsJsonObject();
         if (object.has("Chinese")) ClientLanguage.setChinese(object.get("Chinese").getAsBoolean());
+        if (object.has("HUD") && object.get("HUD").isJsonObject()) HudLayout.restore(object.getAsJsonObject("HUD"));
     }
 
     @Override
@@ -50,6 +54,7 @@ public class ClientConfig extends Config {
         Files.createDirectories(path.getParent());
         JsonObject object = new JsonObject();
         object.addProperty("Chinese", ClientLanguage.isChinese());
+        object.add("HUD", HudLayout.serialize());
         Path temporary = Files.createTempFile(path.getParent(), "Client-", ".tmp");
         try {
             Files.write(temporary, new GsonBuilder().setPrettyPrinting().create()

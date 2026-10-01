@@ -38,6 +38,9 @@ public class TabMod extends Mod {
         drawTab(2, 35);
     }
 
+    public boolean isModulesOpen() { return mod; }
+    public int selectedCategory() { return currentCategory; }
+
     @Override
     public void key(int key) {
         if (!mod) {

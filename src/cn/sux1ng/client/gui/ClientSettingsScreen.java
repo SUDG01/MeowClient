@@ -2,6 +2,7 @@ package cn.sux1ng.client.gui;
 
 import cn.sux1ng.client.MeowClient;
 import cn.sux1ng.client.ui.ClientLanguage;
+import cn.sux1ng.client.ui.ClientIcons;
 import cn.sux1ng.client.ui.MeowTheme;
 import cn.sux1ng.client.util.DrawUtil;
 import net.minecraft.client.gui.GuiScreen;
@@ -23,9 +24,7 @@ public class ClientSettingsScreen extends GuiScreen {
         int top = panelTop();
         int panelWidth = panelWidth();
         MeowTheme.panel(left, top, panelWidth, 198, 13);
-        DrawUtil.drawRoundedRect(left + 22, top + 17, 24, 23, 7, theme.card);
-        MeowTheme.paw(left + 34, top + 28, theme.accent);
-        fontRendererObj.drawStringWithShadow("MeowClient", left + 56, top + 21, theme.text);
+        fontRendererObj.drawStringWithShadow(MeowClient.NAME, left + 23, top + 21, theme.text);
         fontRendererObj.drawString(ClientLanguage.ui("ClientSetting"), left + 23, top + 56, theme.muted);
 
         boolean hovered = hit(mouseX, mouseY, left + 18, top + 81, panelWidth - 36, 61);
@@ -46,6 +45,18 @@ public class ClientSettingsScreen extends GuiScreen {
         DrawUtil.drawRoundedRect(left + 18, top + 156, 72, 27, 7, backColor);
         fontRendererObj.drawStringWithShadow(ClientLanguage.ui("Back"),
                 left + 31, top + 165, theme.text);
+        int brushX = left + panelWidth - 62, keyX = left + panelWidth - 28, toolsY = top + 170;
+        boolean brushHover = ClientIcons.hit(mouseX, mouseY, brushX, toolsY, 13);
+        boolean keyHover = ClientIcons.hit(mouseX, mouseY, keyX, toolsY, 13);
+        DrawUtil.drawCircle(brushX, toolsY, 13, brushHover ? theme.hover : theme.card);
+        DrawUtil.drawCircle(keyX, toolsY, 13, keyHover ? theme.hover : theme.card);
+        ClientIcons.brush(brushX, toolsY, theme.accent);
+        ClientIcons.keyboard(keyX, toolsY, theme.accent);
+        if (brushHover || keyHover) {
+            String label = ClientLanguage.ui(brushHover ? "HUD editor" : "Key bindings");
+            fontRendererObj.drawStringWithShadow(label, left + panelWidth - fontRendererObj.getStringWidth(label) - 18,
+                    top + 145, theme.muted);
+        }
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
@@ -54,6 +65,12 @@ public class ClientSettingsScreen extends GuiScreen {
         if (mouseButton == 0) {
             int left = panelLeft();
             int top = panelTop();
+            if (ClientIcons.hit(mouseX, mouseY, left + panelWidth() - 62, top + 170, 13)) {
+                mc.displayGuiScreen(new HudEditorScreen(this)); return;
+            }
+            if (ClientIcons.hit(mouseX, mouseY, left + panelWidth() - 28, top + 170, 13)) {
+                mc.displayGuiScreen(new KeyBindingsScreen(this)); return;
+            }
             if (hit(mouseX, mouseY, left + 18, top + 81, panelWidth() - 36, 61)) {
                 ClientLanguage.setChinese(!ClientLanguage.isChinese());
                 if (MeowClient.configManager != null) MeowClient.configManager.saveClientSettings();

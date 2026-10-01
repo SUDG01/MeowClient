@@ -23,7 +23,8 @@ public final class ClientLanguage {
             "FastPlace", "快速放置", "TimeChanger", "时间天气", "AutoGG", "自动发送 GG",
             "ArrayList", "功能列表", "InfoHUD", "信息面板", "TargetHUD", "目标面板",
             "ArmorHUD", "装备面板", "Tab", "键盘菜单", "Logo", "标识",
-            "ClickGUI", "功能界面", "Blatant", "高风险模式", "BetterFont", "自定义字体");
+            "ClickGUI", "功能界面", "Blatant", "高风险模式", "BetterFont", "自定义字体",
+            "Trajectories", "弹道预览", "TNTTimer", "TNT 倒计时", "DamageIndicator", "受击方向");
 
     private static final Map<String, String> VALUES = pairs(
             "OnlyWhileAttacking", "仅攻击时", "Target", "目标模式", "Range", "距离",
@@ -48,6 +49,8 @@ public final class ClientLanguage {
             "Duration", "持续时间", "VisibleColor", "可见颜色", "InvisibleColor", "遮挡颜色",
             "Armor", "装备", "Gamma", "亮度", "Effect", "效果", "Count", "数量",
             "Rings", "光环数量", "Height", "高度", "Opacity", "不透明度",
+            "Width", "轨迹宽度", "LineWidth", "线条粗细",
+            "IdleBow", "持弓预览满弦", "Landing", "落点标记", "Radius", "提示半径", "InferMelee", "推断近战来源",
             "ZoomFOV", "缩放视角", "X", "X", "Y", "Y", "Z", "Z");
 
     private static final Map<String, String> OPTIONS = pairs(
@@ -68,6 +71,9 @@ public final class ClientLanguage {
             "CSGO(Gamesense)", "边框", "Sense", "简约");
 
     private static final Map<String, String> UI = pairs(
+            "HUD editor", "HUD 编辑器", "Key bindings", "按键管理", "Reset all", "全部重置",
+            "Reset", "重置", "Done", "完成", "Conflict", "按键冲突", "None", "无",
+            "Drag to move · Scroll to scale · Right click to toggle", "拖动调整位置 · 滚轮缩放 · 右键切换显示",
             "Search", "搜索", "Select a module", "选择功能", "Settings", "设置",
             "Key", "按键", "Bind", "触发方式", "Press key...", "请按下按键…",
             "Back", "返回", "ClientSetting", "客户端设置", "Chinese", "中文",

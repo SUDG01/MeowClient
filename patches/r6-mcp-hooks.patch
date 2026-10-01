@@ -1,0 +1,83 @@
+diff --git a/src/net/minecraft/client/entity/EntityPlayerSP.java b/src/net/minecraft/client/entity/EntityPlayerSP.java
+--- a/src/net/minecraft/client/entity/EntityPlayerSP.java
++++ b/src/net/minecraft/client/entity/EntityPlayerSP.java
+@@ -328,6 +328,15 @@
+         return null;
+     }
+ 
++    /** Publishes the takeoff position after a local jump has been performed. */
++    @Override
++    public void jump()
++    {
++        double takeoffY = this.getEntityBoundingBox().minY;
++        super.jump();
++        cn.sux1ng.client.events.EventManager.call(new cn.sux1ng.client.events.impl.JumpEvent(this, this.posX, takeoffY, this.posZ));
++    }
++
+     /**
+      * Joins the passed in entity item with the world. Args: entityItem
+      */
+diff --git a/src/net/minecraft/client/multiplayer/PlayerControllerMP.java b/src/net/minecraft/client/multiplayer/PlayerControllerMP.java
+--- a/src/net/minecraft/client/multiplayer/PlayerControllerMP.java
++++ b/src/net/minecraft/client/multiplayer/PlayerControllerMP.java
+@@ -495,6 +495,10 @@
+ 
+         if (this.currentGameType != WorldSettings.GameType.SPECTATOR)
+         {
++            if (playerIn == this.mc.thePlayer)
++            {
++                cn.sux1ng.client.events.EventManager.call(new cn.sux1ng.client.events.impl.AttackEvent(playerIn, targetEntity));
++            }
+             playerIn.attackTargetEntityWithCurrentItem(targetEntity);
+         }
+     }
+diff --git a/src/net/minecraft/client/renderer/EntityRenderer.java b/src/net/minecraft/client/renderer/EntityRenderer.java
+--- a/src/net/minecraft/client/renderer/EntityRenderer.java
++++ b/src/net/minecraft/client/renderer/EntityRenderer.java
+@@ -930,6 +930,7 @@
+             {
+                 float f = world.getSunBrightness(1.0F);
+                 float f1 = f * 0.95F + 0.05F;
++                boolean clientNightVision = cn.sux1ng.client.mod.mods.render.FullBrightMod.isNightVisionActive();
+ 
+                 for (int i = 0; i < 256; ++i)
+                 {
+@@ -967,9 +968,9 @@
+                         f10 = 0.25F + f7 * 0.75F;
+                     }
+ 
+-                    if (this.mc.thePlayer.isPotionActive(Potion.nightVision))
+-                    {
+-                        float f15 = this.getNightVisionBrightness(this.mc.thePlayer, partialTicks);
++                    if (clientNightVision || this.mc.thePlayer.isPotionActive(Potion.nightVision))
++                    {
++                        float f15 = clientNightVision ? 1.0F : this.getNightVisionBrightness(this.mc.thePlayer, partialTicks);
+                         float f12 = 1.0F / f8;
+ 
+                         if (f12 > 1.0F / f9)
+@@ -1901,9 +1902,10 @@
+             this.fogColorBlue = this.fogColorBlue * (1.0F - f14) + this.fogColorBlue * 0.6F * f14;
+         }
+ 
+-        if (entity instanceof EntityLivingBase && ((EntityLivingBase)entity).isPotionActive(Potion.nightVision))
+-        {
+-            float f15 = this.getNightVisionBrightness((EntityLivingBase)entity, partialTicks);
++        boolean clientNightVision = cn.sux1ng.client.mod.mods.render.FullBrightMod.isNightVisionActive();
++        if (clientNightVision || entity instanceof EntityLivingBase && ((EntityLivingBase)entity).isPotionActive(Potion.nightVision))
++        {
++            float f15 = clientNightVision ? 1.0F : this.getNightVisionBrightness((EntityLivingBase)entity, partialTicks);
+             float f6 = 1.0F / this.fogColorRed;
+ 
+             if (f6 > 1.0F / this.fogColorGreen)
+diff --git a/src/net/minecraft/client/gui/GuiIngame.java b/src/net/minecraft/client/gui/GuiIngame.java
+--- a/src/net/minecraft/client/gui/GuiIngame.java
++++ b/src/net/minecraft/client/gui/GuiIngame.java
+@@ -230,7 +230,7 @@
+         }
+ 
+         if (!this.mc.gameSettings.showDebugInfo) {
+-            MeowClient.modManager.getEnableMods().forEach(Mod::draw);
++            MeowClient.modManager.getEnableMods().forEach(cn.sux1ng.client.ui.HudLayout::render);
+         }
+ 
+         if (this.recordPlayingUpFor > 0)

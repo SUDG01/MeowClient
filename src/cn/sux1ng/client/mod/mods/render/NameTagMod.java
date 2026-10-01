@@ -2,6 +2,7 @@ package cn.sux1ng.client.mod.mods.render;
 
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
+import cn.sux1ng.client.util.RenderState;
 import cn.sux1ng.client.value.ModeValue;
 import cn.sux1ng.client.value.NumberValue;
 import net.minecraft.client.gui.FontRenderer;
@@ -33,15 +34,16 @@ public class NameTagMod extends Mod {
 
     @Override
     public void render(float partialTicks) {
-        for (Entity entity : mc.theWorld.loadedEntityList) {
-            if (entity instanceof EntityPlayer && entity != mc.thePlayer) {
-                EntityLivingBase livingEntity = (EntityLivingBase) entity;
-
-                double x = livingEntity.lastTickPosX + (livingEntity.posX - livingEntity.lastTickPosX) * partialTicks - mc.getRenderManager().renderPosX;
-                double y = livingEntity.lastTickPosY + (livingEntity.posY - livingEntity.lastTickPosY) * partialTicks - mc.getRenderManager().renderPosY;
-                double z = livingEntity.lastTickPosZ + (livingEntity.posZ - livingEntity.lastTickPosZ) * partialTicks - mc.getRenderManager().renderPosZ;
-
-                renderNameTag(livingEntity, x, y, z, partialTicks);
+        if (mc == null || mc.thePlayer == null || mc.theWorld == null) return;
+        try (RenderState state = RenderState.capture()) {
+            for (Entity entity : mc.theWorld.loadedEntityList) {
+                if (entity instanceof EntityPlayer && entity != mc.thePlayer && !entity.isDead) {
+                    EntityLivingBase livingEntity = (EntityLivingBase) entity;
+                    double x = livingEntity.lastTickPosX + (livingEntity.posX - livingEntity.lastTickPosX) * partialTicks - mc.getRenderManager().renderPosX;
+                    double y = livingEntity.lastTickPosY + (livingEntity.posY - livingEntity.lastTickPosY) * partialTicks - mc.getRenderManager().renderPosY;
+                    double z = livingEntity.lastTickPosZ + (livingEntity.posZ - livingEntity.lastTickPosZ) * partialTicks - mc.getRenderManager().renderPosZ;
+                    renderNameTag(livingEntity, x, y, z, partialTicks);
+                }
             }
         }
     }
@@ -71,7 +73,8 @@ public class NameTagMod extends Mod {
         GlStateManager.pushMatrix();
         GlStateManager.translate(x, y + entity.height + heightValue.getValue(), z);
         GlStateManager.rotate(-mc.getRenderManager().playerViewY, 0.0F, 1.0F, 0.0F);
-        GlStateManager.rotate(mc.getRenderManager().playerViewX, 1.0F, 0.0F, 0.0F);
+        GlStateManager.rotate(mc.getRenderManager().playerViewX * (mc.gameSettings.thirdPersonView == 2 ? -1 : 1),
+                1.0F, 0.0F, 0.0F);
 
         float distance = mc.thePlayer.getDistanceToEntity(entity);
         float baseScale = (distance / 375f) * scaleValue.getValue().floatValue();
@@ -82,7 +85,9 @@ public class NameTagMod extends Mod {
 
         GlStateManager.disableLighting();
         GlStateManager.depthMask(false);
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
+        GlStateManager.disableDepth();
+        GlStateManager.disableCull();
+        GlStateManager.disableFog();
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
 
@@ -118,7 +123,7 @@ public class NameTagMod extends Mod {
 
         font.drawString(displayTag, -width, 0, -1);
 
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
+        GlStateManager.enableDepth();
         GlStateManager.depthMask(true);
         GlStateManager.enableLighting();
         GlStateManager.disableBlend();

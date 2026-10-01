@@ -38,12 +38,9 @@ public class InfoHUDMod extends Mod {
         setEnable(true);
     }
 
-    @Override
-    public void draw() {
-        if (mc.thePlayer == null || mc.gameSettings.showDebugInfo) return;
-
-        FontRenderer fr = mc.fontRendererObj;
+    public List<String> getLines() {
         List<String> lines = new ArrayList<>();
+        if (mc == null || mc.thePlayer == null) return lines;
 
         // 准备数据
         if (showFPS.getValue()) {
@@ -62,6 +59,14 @@ public class InfoHUDMod extends Mod {
             int pz = MathHelper.floor_double(mc.thePlayer.posZ);
             lines.add("XYZ: §f" + px + " " + py + " " + pz);
         }
+        return lines;
+    }
+
+    @Override
+    public void draw() {
+        if (mc.thePlayer == null || mc.gameSettings.showDebugInfo) return;
+        FontRenderer fr = mc.fontRendererObj;
+        List<String> lines = getLines();
 
         float startX = x.getValue().floatValue();
         float startY = y.getValue().floatValue();

@@ -150,6 +150,9 @@ public class ModManager {
         mods.add(new HitParticlesMod());
         mods.add(new DamageParticlesMod());
         mods.add(new TracersMod());
+        mods.add(new TrajectoriesMod());
+        mods.add(new TNTTimerMod());
+        mods.add(new DamageIndicatorMod());
         mods.add(new DerpMod());
         mods.add(new SkinDerpMod());
         mods.add(new TwerkMod());
@@ -178,6 +181,16 @@ public class ModManager {
             }
         }
         return null;
+    }
+
+    /** Changes a binding while releasing any temporary Hold/Smart activation. */
+    public void setBinding(Mod mod, int key, Mod.BindMode mode) {
+        Boolean initial = smartInitialStates.remove(mod);
+        smartPressTimes.remove(mod);
+        if (initial != null) mod.setEnable(initial);
+        else if ((mod.getBindMode() == Mod.BindMode.HOLD || mode == Mod.BindMode.HOLD) && mod.isEnable()) mod.setEnable(false);
+        mod.setKey(key);
+        mod.setBindMode(mode);
     }
 
     public List<Mod> getByCategory(Category category){
