@@ -1,0 +1,29 @@
+--- a/src/net/minecraft/client/renderer/EntityRenderer.java
++++ b/src/net/minecraft/client/renderer/EntityRenderer.java
+@@ -1092,6 +1092,8 @@
+             Mouse.setGrabbed(true);
+         }
+ 
++        float meowMouseYaw = 0.0F;
++        float meowMousePitch = 0.0F;
+         if (this.mc.inGameHasFocus && flag)
+         {
+             this.mc.mouseHelper.mouseXYChange();
+@@ -1105,6 +1107,8 @@
+             {
+                 i = -1;
+             }
++            meowMouseYaw = f2 * 0.15F;
++            meowMousePitch = -f3 * (float)i * 0.15F;
+ 
+             if (this.mc.gameSettings.smoothCamera)
+             {
+@@ -1124,6 +1128,8 @@
+             }
+         }
+ 
++        cn.sux1ng.client.events.EventManager.call(new cn.sux1ng.client.events.impl.CameraEvent(
++                p_181560_1_, meowMouseYaw, meowMousePitch, this.mc.inGameHasFocus && flag));
+         this.mc.mcProfiler.endSection();
+ 
+         if (!this.mc.skipRenderWorld)

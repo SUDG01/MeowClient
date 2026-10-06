@@ -240,7 +240,7 @@ public class R5RegressionTest {
             BlatantMod blatant = manager.getByClass(BlatantMod.class);
             require(blatant != null && blatant.getCategory() == Category.MISC && !blatant.isEnable(),
                     "Blatant should start disabled in Misc");
-            String[] restricted = {"KillAura", "AutoClicker", "NoClickDelay", "Speed", "NoSlow",
+            String[] restricted = {"KillAura", "Aimbot", "AutoClicker", "NoClickDelay", "Speed", "NoSlow",
                     "NoJumpDelay", "Eagle", "FastPlace", "AutoTool", "Derp", "SkinDerp", "Twerk"};
             for (String name : restricted) {
                 Mod mod = manager.getByName(name);
@@ -259,11 +259,13 @@ public class R5RegressionTest {
             blatant.setEnable(true);
             Mod derp = manager.getByName("Derp");
             Mod skinDerp = manager.getByName("SkinDerp");
+            Mod aimbot = manager.getByName("Aimbot");
             derp.setEnable(true);
             skinDerp.setEnable(true);
-            require(derp.isEnable() && skinDerp.isEnable(), "Blatant did not unlock gameplay modules");
+            aimbot.setEnable(true);
+            require(derp.isEnable() && skinDerp.isEnable() && aimbot.isEnable(), "Blatant did not unlock gameplay modules");
             blatant.setEnable(false);
-            require(!derp.isEnable() && !skinDerp.isEnable(), "restricted modules stayed on after Blatant closed");
+            require(!derp.isEnable() && !skinDerp.isEnable() && !aimbot.isEnable(), "restricted modules stayed on after Blatant closed");
             require(visual.isEnable(), "closing Blatant disabled a visual module");
         });
         check("config enables Blatant before restoring restricted modules", () -> {
@@ -275,10 +277,11 @@ public class R5RegressionTest {
             enabled.addProperty("enable", true);
             root.add("Blatant", enabled);
             root.add("Derp", enabled);
+            root.add("Aimbot", enabled);
             ModConfig config = new ModConfig();
             config.restoreSettings(root, manager.getMods());
             config.activatePendingModules();
-            require(manager.getByName("Blatant").isEnable() && manager.getByName("Derp").isEnable(),
+            require(manager.getByName("Blatant").isEnable() && manager.getByName("Derp").isEnable() && manager.getByName("Aimbot").isEnable(),
                     "saved Blatant permission was not applied first");
             manager.getByName("Blatant").setEnable(false);
         });
@@ -290,10 +293,11 @@ public class R5RegressionTest {
             JsonObject enabled = new JsonObject();
             enabled.addProperty("enable", true);
             root.add("Derp", enabled);
+            root.add("Aimbot", enabled);
             ModConfig config = new ModConfig();
             config.restoreSettings(root, manager.getMods());
             config.activatePendingModules();
-            require(!manager.getByName("Derp").isEnable(),
+            require(!manager.getByName("Derp").isEnable() && !manager.getByName("Aimbot").isEnable(),
                     "restricted module bypassed Blatant through config load");
         });
         check("old AutoClicker Blatant setting migrates to BlockHit", () -> {

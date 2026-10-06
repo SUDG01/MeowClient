@@ -2,6 +2,7 @@ package cn.sux1ng.client.mod;
 
 import cn.sux1ng.client.MeowClient;
 import cn.sux1ng.client.mod.mods.combat.AutoClickerMod;
+import cn.sux1ng.client.mod.mods.combat.AimbotMod;
 import cn.sux1ng.client.mod.mods.combat.KillAuraMod;
 import cn.sux1ng.client.mod.mods.combat.NoClickDelayMod;
 import cn.sux1ng.client.mod.mods.misc.BlatantMod;
@@ -24,7 +25,7 @@ import java.util.Set;
 public final class BlatantPolicy {
     private static final Set<Class<? extends Mod>> RESTRICTED = Collections.unmodifiableSet(
             new HashSet<Class<? extends Mod>>(Arrays.asList(
-                    KillAuraMod.class, AutoClickerMod.class, NoClickDelayMod.class,
+                    KillAuraMod.class, AimbotMod.class, AutoClickerMod.class, NoClickDelayMod.class,
                     SpeedMod.class, NoSlowMod.class, NoJumpDelayMod.class,
                     EagleMod.class, FastPlaceMod.class, AutoToolMod.class,
                     DerpMod.class, SkinDerpMod.class, TwerkMod.class)));

@@ -12,7 +12,7 @@ import java.util.Map;
 /** Curated display names. Internal names and saved config keys stay in English. */
 public final class ClientLanguage {
     private static final Map<String, String> MODULES = pairs(
-            "AutoClicker", "自动点击", "KillAura", "自动攻击", "ClickSound", "点击音效",
+            "AutoClicker", "自动点击", "KillAura", "自动攻击", "Aimbot", "瞄准辅助", "ClickSound", "点击音效",
             "NoClickDelay", "无点击间隔", "Sprint", "自动疾跑", "Speed", "速度增强",
             "NoSlow", "使用无减速", "NoJumpDelay", "无跳跃延迟", "CustomCape", "自定义披风",
             "Animations", "手部动作", "Derp", "摇头", "SkinDerp", "皮肤闪烁",
@@ -31,6 +31,10 @@ public final class ClientLanguage {
             "FOV", "视角范围", "MinCPS", "最低点击率", "MaxCPS", "最高点击率",
             "Rotation", "视角调整", "MaxTurnSpeed", "最大转向速度", "Smoothness", "平滑程度",
             "ReactionDelay", "目标反应延迟", "SwitchDelay", "目标保持时间", "AimVariation", "瞄准位置变化",
+            "AimPoint", "瞄准位置", "ResponseTime", "平滑响应时间", "HorizontalSpeed", "水平辅助速度",
+            "VerticalSpeed", "垂直辅助速度", "Strength", "辅助强度", "DeadZone", "停止修正范围",
+            "ClickOnly", "仅按住攻击时", "WeaponOnly", "仅手持武器", "MousePriority", "鼠标操作优先",
+            "StopOnTarget", "准星命中后停止修正", "IgnoreTeams", "忽略队友",
             "Players", "玩家", "Animals", "动物", "Mobs", "怪物", "Invisibles", "隐身目标",
             "AutoBlock", "自动格挡", "Mode", "模式", "Volume", "音量", "Variation", "音调浮动",
             "CPS", "点击率", "BlockHit", "格挡攻击", "Amount", "补偿强度",
@@ -55,6 +59,7 @@ public final class ClientLanguage {
             "ZoomFOV", "缩放视角", "X", "X", "Y", "Y", "Z", "Z");
 
     private static final Map<String, String> OPTIONS = pairs(
+            "Assist", "轻辅助", "Track", "平滑跟随", "Closest", "贴近准星", "Body", "躯干", "Head", "头部",
             "Single", "单目标", "Switch", "切换目标", "Lock", "锁定", "Smooth", "平滑",
             "Silent", "静默", "None", "无", "Normal", "标准", "Jitter", "抖动",
             "Double", "双击", "Fixed", "固定", "Legit", "自然", "Vanilla", "原版",

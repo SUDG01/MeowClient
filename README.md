@@ -1,6 +1,6 @@
 # MeowClient R7
 
-基于 Minecraft 1.8.9 MCP、使用 Java 8 开发的 PVP 客户端。当前注册 **38 个功能模块**，分为战斗、移动、玩家、视觉、世界、其他、信息与界面八类。
+基于 Minecraft 1.8.9 MCP、使用 Java 8 开发的 PVP 客户端。当前注册 **39 个功能模块**，分为战斗、移动、玩家、视觉、世界、其他、信息与界面八类。
 
 ## 界面与操作
 
@@ -26,7 +26,7 @@ ClickGUI 提供「窗口式」和「面板式」两种布局，共用樱粉、�
 
 | 分类 | 模块内部名 |
 | --- | --- |
-| 战斗 | AutoClicker、KillAura、ClickSound、NoClickDelay |
+| 战斗 | AutoClicker、KillAura、Aimbot、ClickSound、NoClickDelay |
 | 移动 | Sprint、Speed、NoSlow、NoJumpDelay |
 | 玩家 | CustomCape、Animations、Derp、SkinDerp、Twerk |
 | 视觉 | ESP、NameTag、FullBright、Zoom、Tracers、Breadcrumbs、JumpEffect、HitParticles、DamageParticles、Trajectories、TNTTimer、DamageIndicator |
@@ -35,7 +35,7 @@ ClickGUI 提供「窗口式」和「面板式」两种布局，共用樱粉、�
 | 信息 | ArrayList、InfoHUD、TargetHUD、ArmorHUD、Tab、Logo |
 | 界面 | ClickGUI |
 
-**Blatant 默认关闭。** 它控制 KillAura、AutoClicker、NoClickDelay、Speed、NoSlow、NoJumpDelay、Eagle、FastPlace、AutoTool、Derp、SkinDerp、Twerk 的启用权限。关闭 Blatant 会立即关闭正在运行的上述模块。视觉和 HUD 模块、Sprint、AutoGG 不受此开关影响。
+**Blatant 默认关闭。** 它控制 KillAura、Aimbot、AutoClicker、NoClickDelay、Speed、NoSlow、NoJumpDelay、Eagle、FastPlace、AutoTool、Derp、SkinDerp、Twerk 的启用权限。关闭 Blatant 会立即关闭正在运行的上述模块。视觉和 HUD 模块、Sprint、AutoGG 不受此开关影响。
 
 AutoClicker 旧的 “Blatant” 参数现显示为 **BlockHit**；旧配置仍可读取。模块设置保存在 `MeowClient/config/Mod.json`，Chinese 开关与 HUD 布局保存在 `MeowClient/config/Client.json`，路径相对于 Minecraft 数据目录。
 
@@ -56,6 +56,19 @@ KillAura 使用 Motion PRE 选择目标并计算转向，等待移动更新提�
 - 自动格挡通过原版物品使用流程进入，攻击前解除，后续 tick 再恢复。模块只解除自己发起的格挡，手动使用物品时让出操作。
 
 全新配置默认使用 Smooth、120° 视角范围、45°/tick 转向上限、150 ms 反应延迟、600 ms 目标保持时间和 0.12 瞄准变化。已有配置保留模式及参数名；转向上限的新范围为 5–90°/tick，旧值超过上限时会按范围调整。KillAura 仍需要开启 Blatant。
+
+## R7 Aimbot / 瞄准辅助
+
+在「战斗」分类中开启 Aimbot，需先开启 Blatant。默认使用 **Assist / 轻辅助**；**Track / 平滑跟随** 的响应更快。辅助逐帧运行在原版鼠标输入之后、相机计算之前，按实际经过的时间控制转向速度与平滑响应。
+
+- 默认按住攻击键且手持剑或斧时触发，距离 3.6、总视角范围 45°、反应延迟 100 ms；辅助强度 0.65，水平和垂直基础速度分别为 80°/s 与 40°/s。
+- 默认瞄准位置为 **Closest / 贴近准星**，寻找目标体积内靠近准星的位置；也可选躯干或头部。准星已穿过目标体积时停止修正，保留玩家已有的瞄准偏差。
+- **鼠标操作优先** 默认开启。向目标外拉鼠或快速甩动时立即暂停修正，并让出 120 ms；普通手动输入先于辅助生效。
+- 保持当前有效目标，排除队友、隐身目标、旁观者、遮挡目标与视角外目标。默认仅选玩家，可启用怪物、动物。
+- 挖方块、使用物品、菜单、暂停、失焦与玩家或世界变化会停止辅助。超过 100 ms 的帧间隔会丢弃旧跟随状态，避免恢复时突然拉动。
+- KillAura 已有目标且使用 Lock、Smooth 或 Silent 时让出转向；None 模式可与瞄准辅助组合使用。攻击和物品使用由原有操作流程处理，Aimbot 本身只调整镜头。
+
+条件触发与目标体积判断参考 [Fusion+ AimAssist](https://github.com/h1meji/fusion-plus/blob/main/fusion-plus/src/base/moduleManager/modules/combat/aimAssist.cpp)，平滑控制与事件接入由本项目实现。参数用于调整操作手感，服务器中的实际表现仍需实测。
 
 ## R6 新功能
 
@@ -90,7 +103,7 @@ KillAura 使用 Motion PRE 选择目标并计算转向，等待移动更新提�
 - 仓库 `lib/` 下的 JAR 依赖
 
 1. 将匹配 R4 的 MCP 源码放入 `src/net/minecraft`。该目录及本地游戏运行目录 `jars/` 被 Git 忽略。
-2. **从干净的 R4 MCP 源码开始**，依次执行 `git apply patches/r5-mcp-hooks.patch`、`git apply patches/r6-mcp-hooks.patch` 与 `git apply patches/r6-input-hooks.patch`。如果源码已经是初版 R6，只应用输入补丁。当前开发工作区中的钩子已经应用，无需重复执行。
+2. **从干净的 R4 MCP 源码开始**，依次执行 `git apply patches/r5-mcp-hooks.patch`、`git apply patches/r6-mcp-hooks.patch`、`git apply patches/r6-input-hooks.patch` 与 `git apply patches/r7-aim-hooks.patch`。如果已有最新 R6 或初版 R7 的输入钩子，只应用 R7 瞄准补丁。当前开发工作区中的钩子已经应用，无需重复执行。
 3. 在 IntelliJ 中把 `src/`、`resources/`、`test/` 分别设为源码、资源、测试源码目录，SDK 设为 JDK 8，并把 `lib/` 的 JAR 加入类路径。
 4. 准备 Minecraft assets 后运行 `test/Start.java`。
 
@@ -104,7 +117,7 @@ KillAura 使用 Motion PRE 选择目标并计算转向，等待移动更新提�
 .\test\Run-R7Checks.ps1 -JdkPath 'C:\Program Files\Java\jdk1.8.0_202' -Render -NativePath 'jars\versions\1.8.8\1.8.8-natives'
 ```
 
-战斗回归使用真实的步行玩家 PRE／移动更新／POST 流程记录发包，覆盖四种转向模式、两种目标模式、攻击顺序、格挡所有权、点击节奏和无效上下文。离屏检查继续覆盖视觉、GUI 与原始鼠标输入；预览图输出到 `out/r7-checks/render-previews/`。联机环境的最终效果仍需进游戏测试。
+战斗回归使用真实的步行玩家 PRE／移动更新／POST 流程记录发包，覆盖四种转向模式、两种目标模式、攻击顺序、格挡所有权、点击节奏和无效上下文。瞄准辅助回放覆盖 30、60、144、360、1000 FPS、移动目标插值、鼠标让出、目标保持、条件触发及模块冲突；Windows 下的 `-Render` 还调用真实的 EntityRenderer 帧入口验证鼠标输入与相机事件顺序。离屏检查继续覆盖视觉、GUI 与原始鼠标输入；预览图输出到 `out/r7-checks/render-previews/`。联机环境的最终效果仍需进游戏测试。
 
 ## 代码入口
 
@@ -120,6 +133,7 @@ KillAura 使用 Motion PRE 选择目标并计算转向，等待移动更新提�
 | `patches/r5-mcp-hooks.patch` | 被忽略的 MCP 源码中的事件与渲染钩子改动 |
 | `patches/r6-mcp-hooks.patch` | 在 R5 基础上补充攻击、跳跃、夜视及 HUD 布局钩子 |
 | `patches/r6-input-hooks.patch` | 帧开始时获取输入的补充钩子 |
+| `patches/r7-aim-hooks.patch` | 鼠标输入后的逐帧相机事件钩子 |
 | `src/cn/sux1ng/client/input/` | 原始鼠标输入、焦点隔离及鼠标事件缓冲 |
 | `src/cn/sux1ng/client/util/RenderState.java` | 视觉效果使用的矩阵与 OpenGL 状态恢复 |
 

@@ -1,6 +1,7 @@
 package cn.sux1ng.client.mod;
 
 import cn.sux1ng.client.mod.mods.combat.AutoClickerMod;
+import cn.sux1ng.client.mod.mods.combat.AimbotMod;
 import cn.sux1ng.client.mod.mods.combat.ClickSoundMod;
 import cn.sux1ng.client.mod.mods.combat.KillAuraMod;
 import cn.sux1ng.client.mod.mods.combat.NoClickDelayMod;
@@ -139,6 +140,7 @@ public class ModManager {
         mods.add(new ArmorHUDMod());
         mods.add(new SpeedMod());
         mods.add(new KillAuraMod());
+        mods.add(new AimbotMod());
         mods.add(new TargetHUDMod());
         mods.add(new ZoomMod());
         mods.add(new ClickSoundMod());
