@@ -20,6 +20,10 @@ import cn.sux1ng.client.MeowClient;
 import cn.sux1ng.client.mod.ModManager;
 import cn.sux1ng.client.mod.Mod;
 import cn.sux1ng.client.mod.mods.misc.TargetMod;
+import cn.sux1ng.client.mod.mods.misc.BlatantMod;
+import cn.sux1ng.client.mod.mods.combat.KillAuraMod;
+import cn.sux1ng.client.mod.mods.render.TargetHUDMod;
+import cn.sux1ng.client.events.impl.MotionEvent;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.monster.EntitySlime;
 import net.minecraft.client.gui.FontRenderer;
@@ -365,6 +369,36 @@ public class R6RenderRegressionTest {
                 camera(0, player.getEyeHeight(), 0, 0, player.getEyeHeight(), 1); esp.render(1);
                 require(coloredPixels() > 40, "a hostile outside EntityMob was not rendered");
                 for (Mod mod : modules.getEnableMods()) mod.setEnable(false);
+            });
+            check("TargetHUD draws an overhealed target acquired by KillAura", () -> {
+                ModManager modules = new ModManager(); MeowClient.modManager = modules;
+                BlatantMod blatant = new BlatantMod(); KillAuraMod aura = new KillAuraMod(); TargetHUDMod hud = new TargetHUDMod();
+                modules.getMods().add(blatant); modules.getMods().add(aura); modules.getMods().add(hud);
+                DataWatcher owner = new DataWatcher(player); owner.addObject(0, (byte)0); owner.addObject(6, 20f); setField(player, "dataWatcher", owner);
+                player.posX = player.posY = player.posZ = player.lastTickPosX = player.lastTickPosY = player.lastTickPosZ = 0;
+                player.rotationYaw = player.rotationPitch = 0; mc.inGameHasFocus = true; mc.currentScreen = null; player.clearItemInUse();
+                world.loadedEntityList.clear(); EntityLivingBase enemy = (EntityLivingBase)target(0, 0, 3); enemy.setEntityId(100); enemy.getDataWatcher().updateObject(6, 40f); world.loadedEntityList.add(enemy);
+                RenderManager original = mc.manager; AvatarRenderManager avatar = allocate(AvatarRenderManager.class); mc.manager = avatar;
+                blatant.setEnable(true); aura.autoBlock.setValue(false); aura.setEnable(true); hud.setEnable(true);
+                try {
+                    EventManager.call(new MotionEvent(MotionEvent.Type.PRE, 0, 0, 0, 0, 0, true));
+                    require(aura.getTarget() == enemy && hud.getDisplayTarget() == enemy, "KillAura target did not reach the real HUD draw path");
+                    overlay(); HudLayout.render(hud);
+                    require(coloredPixels() > 40 && avatar.draws == 1, "TargetHUD did not draw its card and avatar");
+                    require((Double)field(hud, "hpWidth") == 90, "overheal exceeded the HUD bar width");
+                    enemy.getDataWatcher().updateObject(6, Float.NaN); overlay(); HudLayout.render(hud);
+                    require(Double.isFinite((Double)field(hud, "hpWidth")), "invalid health poisoned the smooth bar");
+                    enemy.getDataWatcher().updateObject(6, 20f); enemy.getEntityAttribute(SharedMonsterAttributes.maxHealth).setBaseValue(0);
+                    overlay(); HudLayout.render(hud); require(Double.isFinite((Double)field(hud, "hpWidth")), "zero max health produced an invalid bar");
+                    enemy.getEntityAttribute(SharedMonsterAttributes.maxHealth).setBaseValue(20); overlay(); HudLayout.render(hud);
+                    require(Double.isFinite((Double)field(hud, "hpWidth")) && (Double)field(hud, "hpWidth") <= 90, "health recovery left an invalid HUD state");
+                    world.loadedEntityList.clear(); EntityLivingBase next = (EntityLivingBase)target(0, 0, 3); next.setEntityId(101); next.getDataWatcher().updateObject(6, 5f); world.loadedEntityList.add(next);
+                    player.ticksExisted++; EventManager.call(new MotionEvent(MotionEvent.Type.PRE, 0, 0, 0, 0, 0, true));
+                    overlay(); HudLayout.render(hud); require(hud.getDisplayTarget() == next && (Double)field(hud, "hpWidth") == 22.5, "new target inherited the previous bar");
+                    hud.style.setValue("Simple"); overlay(); HudLayout.render(hud); require(coloredPixels() > 40, "Simple HUD failed on the same target");
+                    world.loadedEntityList.clear(); player.ticksExisted++; EventManager.call(new MotionEvent(MotionEvent.Type.PRE, 0, 0, 0, 0, 0, true));
+                    overlay(); HudLayout.render(hud); require(hud.getDisplayTarget() == null && (Double)field(hud, "hpWidth") == 0, "losing the target retained health state");
+                } finally { hud.setEnable(false); aura.setEnable(false); blatant.setEnable(false); mc.manager = original; }
             });
             check("NightVision changes the vanilla lightmap and restores Gamma mode", () -> {
                 ModManager mods = new ModManager();
@@ -754,6 +788,11 @@ public class R6RenderRegressionTest {
         FixtureTarget() { super(null, null); }
         @Override public boolean isSpectator() { return false; }
         @Override public IChatComponent getDisplayName() { return new ChatComponentText("Player"); }
+        @Override public String getName() { return "Player"; }
+    }
+    private static class AvatarRenderManager extends RenderManager {
+        int draws; AvatarRenderManager() { super(null, null); }
+        @Override public boolean renderEntityWithPosYaw(Entity entity, double x, double y, double z, float yaw, float partialTicks) { draws++; return true; }
     }
 
     private static class FixtureVillager extends EntityVillager {

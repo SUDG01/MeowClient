@@ -26,11 +26,16 @@ public class TargetHUDMod extends Mod {
     public ModeValue style = new ModeValue("Style", "Neon", new String[]{"Neon", "Simple"});
 
     private double hpWidth = 0;
+    private EntityLivingBase previousTarget;
 
     public TargetHUDMod() {
         super("TargetHUD", Category.HUD);
         addValues(x, y, style);
     }
+
+    @Override public void enable() { resetHealth(); }
+    @Override public void disable() { resetHealth(); }
+    private void resetHealth() { hpWidth = 0; previousTarget = null; }
 
     public EntityLivingBase getDisplayTarget() {
         if (mc == null || mc.thePlayer == null || MeowClient.modManager == null) return null;
@@ -51,16 +56,22 @@ public class TargetHUDMod extends Mod {
     @Override
     public void draw() {
         EntityLivingBase target = getDisplayTarget();
-        if (target == null) return;
+        if (target == null) { resetHealth(); return; }
+        // Sample health once; servers can publish health and maximum-health attributes separately.
+        float health = safeHealth(target.getHealth()), maxHealth = target.getMaxHealth();
+        double targetWidth = 90 * healthFraction(health, maxHealth);
+        if (previousTarget != target || !Double.isFinite(hpWidth)) hpWidth = targetWidth;
+        else hpWidth += (targetWidth - hpWidth) * 0.12;
+        previousTarget = target;
 
         if (style.is("Neon")) {
-            renderNeon(target);
+            renderNeon(target, health, maxHealth);
         } else {
-            renderSimple(target);
+            renderSimple(target, health);
         }
     }
 
-    private void renderNeon(EntityLivingBase target) {
+    private void renderNeon(EntityLivingBase target, float health, float maxHealth) {
         MeowTheme.Palette theme = MeowTheme.current();
         float startX = x.getValue().floatValue();
         float startY = y.getValue().floatValue();
@@ -89,15 +100,8 @@ public class TargetHUDMod extends Mod {
 
         // 血量
         DecimalFormat df = new DecimalFormat("0.0");
-        String hpStr = df.format(target.getHealth()) + (ClientLanguage.isChinese() ? " 生命" : " HP");
+        String hpStr = df.format(health) + (ClientLanguage.isChinese() ? " 生命" : " HP");
         mc.fontRendererObj.drawStringWithShadow(hpStr, startX + 42, startY + 20, theme.muted);
-
-        // 平滑血条
-        float health = target.getHealth();
-        float maxHealth = target.getMaxHealth();
-        float hpPercentage = MathHelper.clamp_float(health / maxHealth, 0, 1);
-        double targetWidth = (width - 50) * hpPercentage;
-        hpWidth += (targetWidth - hpWidth) * 0.12;  // 平滑
 
         // 血条背景
         DrawUtil.drawRoundedRect(startX + 42, startY + 34, width - 50, 5, 2.5, theme.outline);
@@ -106,10 +110,10 @@ public class TargetHUDMod extends Mod {
         DrawUtil.drawRoundedRect(startX + 42, startY + 34, hpWidth, 5, 2.5, color);
     }
 
-    private void renderSimple(EntityLivingBase target) {
+    private void renderSimple(EntityLivingBase target, float health) {
         float startX = x.getValue().floatValue();
         float startY = y.getValue().floatValue();
-        String text = target.getName() + " §c" + (int)target.getHealth() + "❤";
+        String text = target.getName() + " §c" + (int)health + "❤";
         int strWidth = mc.fontRendererObj.getStringWidth(text);
         DrawUtil.drawRoundedRect(startX - 3, startY - 3, strWidth + 10, 15, 4,
                 MeowTheme.current().surface);
@@ -118,7 +122,7 @@ public class TargetHUDMod extends Mod {
     }
 
     private int getHealthColor(float health, float maxHealth) {
-        float p = health / maxHealth;
+        float p = healthFraction(health, maxHealth);
         // 4段渐变: 绿→黄绿→橙→红
         if (p > 0.66f) {
             float f = (p - 0.66f) / 0.34f;
@@ -130,5 +134,11 @@ public class TargetHUDMod extends Mod {
             float f = p / 0.33f;
             return new Color(255, (int)(170*f), 0).getRGB();             // 红(255,0,0) → 橙(255,170,0)
         }
+    }
+
+    private static float safeHealth(float health) { return Float.isFinite(health) ? Math.max(0, health) : 0; }
+    private static float healthFraction(float health, float maxHealth) {
+        if (!Float.isFinite(maxHealth) || maxHealth <= 0) return 0;
+        return MathHelper.clamp_float(safeHealth(health) / maxHealth, 0, 1);
     }
 }
