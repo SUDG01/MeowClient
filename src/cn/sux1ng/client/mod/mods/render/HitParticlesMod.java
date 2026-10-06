@@ -4,6 +4,7 @@ import cn.sux1ng.client.events.EventTarget;
 import cn.sux1ng.client.events.impl.AttackEvent;
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
+import cn.sux1ng.client.targeting.TargetRules;
 import cn.sux1ng.client.value.ModeValue;
 import cn.sux1ng.client.value.NumberValue;
 import net.minecraft.entity.Entity;
@@ -26,7 +27,7 @@ public class HitParticlesMod extends Mod {
     public void onAttack(AttackEvent event) {
         if (mc == null || mc.thePlayer == null || mc.theWorld == null || event.getPlayer() != mc.thePlayer) return;
         Entity target = event.getTarget();
-        if (target == null || target.isDead || target.worldObj != mc.theWorld) return;
+        if (target == null || target.worldObj != mc.theWorld || !TargetRules.canRender(target)) return;
         EnumParticleTypes type;
         switch (particleMode.getValue()) {
             case "Flame": type = EnumParticleTypes.FLAME; break;

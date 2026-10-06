@@ -2,6 +2,7 @@ package cn.sux1ng.client.mod.mods.combat;
 
 import cn.sux1ng.client.combat.AimMotion;
 import cn.sux1ng.client.combat.AttackRhythm;
+import cn.sux1ng.client.targeting.TargetRules;
 import cn.sux1ng.client.events.EventTarget;
 import cn.sux1ng.client.events.impl.AttackEvent;
 import cn.sux1ng.client.events.impl.MotionEvent;
@@ -13,9 +14,6 @@ import cn.sux1ng.client.value.NumberValue;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.monster.EntityMob;
-import net.minecraft.entity.passive.EntityAnimal;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
 import net.minecraft.util.AxisAlignedBB;
@@ -47,10 +45,10 @@ public class KillAuraMod extends Mod {
             .setVisibility(() -> targetMode.is("Switch"));
     public NumberValue aimVariation = new NumberValue("AimVariation", 0.12, 0, 0.3, 0.01)
             .setVisibility(() -> !rotMode.is("None"));
-    public BooleanValue players = new BooleanValue("Players", true);
-    public BooleanValue animals = new BooleanValue("Animals", false);
-    public BooleanValue mobs = new BooleanValue("Mobs", true);
-    public BooleanValue invisible = new BooleanValue("Invisibles", false);
+    public BooleanValue players = new BooleanValue("Players", true).setVisibility(() -> !TargetRules.isUnified());
+    public BooleanValue animals = new BooleanValue("Animals", false).setVisibility(() -> !TargetRules.isUnified());
+    public BooleanValue mobs = new BooleanValue("Mobs", true).setVisibility(() -> !TargetRules.isUnified());
+    public BooleanValue invisible = new BooleanValue("Invisibles", false).setVisibility(() -> !TargetRules.isUnified());
     public BooleanValue autoBlock = new BooleanValue("AutoBlock", true);
 
     private final LongSupplier clock;
@@ -185,11 +183,8 @@ public class KillAuraMod extends Mod {
     }
     private boolean isValid(EntityLivingBase entity) {
         if (entity == null || entity == player || entity.worldObj != world || entity.isDead || entity.getHealth() <= 0
-                || player.getDistanceSqToEntity(entity) > range.getValue() * range.getValue()
-                || entity.isInvisible() && !invisible.getValue()) return false;
-        boolean accepted = entity instanceof EntityPlayer && players.getValue() && !((EntityPlayer)entity).isSpectator()
-                || entity instanceof EntityAnimal && animals.getValue() || entity instanceof EntityMob && mobs.getValue();
-        if (!accepted) return false;
+                || player.getDistanceSqToEntity(entity) > range.getValue() * range.getValue()) return false;
+        if (!TargetRules.canAttack(entity, players.getValue(), mobs.getValue(), animals.getValue(), invisible.getValue())) return false;
         float yaw = (float)Math.toDegrees(Math.atan2(entity.posZ - player.posZ, entity.posX - player.posX)) - 90;
         return fov.getValue() >= 360 || Math.abs(AimMotion.wrap(player.rotationYaw - yaw)) <= fov.getValue() * 0.5;
     }

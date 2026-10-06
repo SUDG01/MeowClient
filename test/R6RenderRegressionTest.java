@@ -19,6 +19,9 @@ import cn.sux1ng.client.util.ProjectilePrediction;
 import cn.sux1ng.client.MeowClient;
 import cn.sux1ng.client.mod.ModManager;
 import cn.sux1ng.client.mod.Mod;
+import cn.sux1ng.client.mod.mods.misc.TargetMod;
+import net.minecraft.entity.passive.EntityVillager;
+import net.minecraft.entity.monster.EntitySlime;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.*;
@@ -341,6 +344,28 @@ public class R6RenderRegressionTest {
                         && !GL11.glIsEnabled(GL11.GL_LIGHTING) && GL11.glIsEnabled(GL11.GL_CULL_FACE),
                         "name tag altered the following module's render state");
             });
+            check("global friendly and hostile selection reaches ESP, NameTag and Tracers", () -> {
+                ModManager modules = new ModManager(); MeowClient.modManager = modules; modules.load();
+                TargetMod targets = modules.getByClass(TargetMod.class); targets.players.setValue(false); targets.friendlies.setValue(true);
+                player.posX = player.posY = player.posZ = player.lastTickPosX = player.lastTickPosY = player.lastTickPosZ = 0;
+                world.loadedEntityList.clear(); world.loadedEntityList.add(visualLiving(FixtureVillager.class));
+                ESPMod esp = new ESPMod(); esp.mode.setValue("Box3D");
+                camera(0, player.getEyeHeight(), 0, 0, player.getEyeHeight(), 1); esp.render(1);
+                require(coloredPixels() > 40, "ESP did not draw a selected friendly entity");
+                camera(0, player.getEyeHeight(), 0, 0, player.getEyeHeight(), 1); esp.mode.setValue("2D"); esp.render(1);
+                require(coloredPixels() > 40, "2D ESP or its equipment path rejected a friendly entity");
+                ((FixtureFont)mc.fontRendererObj).drawn.clear(); new NameTagMod().render(1);
+                require(!((FixtureFont)mc.fontRendererObj).drawn.isEmpty(), "NameTag did not label a selected friendly entity");
+                camera(0, player.getEyeHeight(), 0, 0, player.getEyeHeight(), 1); new TracersMod().render(1);
+                require(coloredPixels() > 40, "Tracers kept its local animal setting instead of the shared selection");
+                targets.friendlies.setValue(false); camera(0, player.getEyeHeight(), 0, 0, player.getEyeHeight(), 1); esp.render(1);
+                ((FixtureFont)mc.fontRendererObj).drawn.clear(); new NameTagMod().render(1); new TracersMod().render(1);
+                require(coloredPixels() == 0 && ((FixtureFont)mc.fontRendererObj).drawn.isEmpty(), "excluded friendly entity stayed visible");
+                targets.mobs.setValue(true); world.loadedEntityList.clear(); world.loadedEntityList.add(visualLiving(FixtureSlime.class));
+                camera(0, player.getEyeHeight(), 0, 0, player.getEyeHeight(), 1); esp.render(1);
+                require(coloredPixels() > 40, "a hostile outside EntityMob was not rendered");
+                for (Mod mod : modules.getEnableMods()) mod.setEnable(false);
+            });
             check("NightVision changes the vanilla lightmap and restores Gamma mode", () -> {
                 ModManager mods = new ModManager();
                 MeowClient.modManager = mods;
@@ -524,6 +549,12 @@ public class R6RenderRegressionTest {
         return entity;
     }
 
+    private static <T extends EntityLivingBase> T visualLiving(Class<T> type) throws Exception {
+        T entity = allocate(type); entity.worldObj = world; entity.posZ = entity.lastTickPosZ = 6;
+        entity.height = 1.8f; entity.width = 0.6f; entity.setEntityBoundingBox(new AxisAlignedBB(-0.3, 0, 5.7, 0.3, 1.8, 6.3));
+        DataWatcher watcher = new DataWatcher(entity); watcher.addObject(0, (byte)0); watcher.addObject(6, 20f); setField(entity, "dataWatcher", watcher);
+        entity.getAttributeMap().registerAttribute(SharedMonsterAttributes.maxHealth).setBaseValue(20); return entity;
+    }
     private static void camera(double x, double y, double z, double tx, double ty, double tz) {
         GlStateManager.viewport(0, 0, SIZE, SIZE);
         GlStateManager.clearColor(0, 0, 0, 1);
@@ -721,9 +752,22 @@ public class R6RenderRegressionTest {
 
     private static class FixtureTarget extends EntityOtherPlayerMP {
         FixtureTarget() { super(null, null); }
+        @Override public boolean isSpectator() { return false; }
         @Override public IChatComponent getDisplayName() { return new ChatComponentText("Player"); }
     }
 
+    private static class FixtureVillager extends EntityVillager {
+        FixtureVillager() { super(null); }
+        @Override public ItemStack getEquipmentInSlot(int slot) { return null; }
+        @Override public ItemStack getHeldItem() { return null; }
+        @Override public IChatComponent getDisplayName() { return new ChatComponentText("Friendly"); }
+    }
+    private static class FixtureSlime extends EntitySlime {
+        FixtureSlime() { super(null); }
+        @Override public ItemStack getEquipmentInSlot(int slot) { return null; }
+        @Override public ItemStack getHeldItem() { return null; }
+        @Override public IChatComponent getDisplayName() { return new ChatComponentText("Slime"); }
+    }
     private static class FixtureConnection extends NetHandlerPlayClient {
         FixtureConnection() { super(null, null, null, null); }
         @Override public void addToSendQueue(Packet packet) {}

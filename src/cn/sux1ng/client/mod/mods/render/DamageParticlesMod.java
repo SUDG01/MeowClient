@@ -4,6 +4,7 @@ import cn.sux1ng.client.events.EventTarget;
 import cn.sux1ng.client.events.impl.AttackEvent;
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
+import cn.sux1ng.client.targeting.TargetRules;
 import cn.sux1ng.client.util.RenderState;
 import cn.sux1ng.client.value.ColorValue;
 import cn.sux1ng.client.value.NumberValue;
@@ -62,7 +63,7 @@ public class DamageParticlesMod extends Mod {
     public void onAttack(AttackEvent event) {
         if (!syncWorld() || event.getPlayer() != player || !(event.getTarget() instanceof EntityLivingBase)) return;
         EntityLivingBase target = (EntityLivingBase) event.getTarget();
-        if (target.isDead || target.worldObj != world) return;
+        if (target.worldObj != world || !TargetRules.canRender(target)) return;
         IAttributeInstance attack = player.getEntityAttribute(SharedMonsterAttributes.attackDamage);
         float estimate = attack == null ? 1f : (float) attack.getAttributeValue();
         estimate += EnchantmentHelper.func_152377_a(player.getHeldItem(), target.getCreatureAttribute());

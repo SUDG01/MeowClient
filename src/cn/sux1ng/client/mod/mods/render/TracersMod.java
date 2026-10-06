@@ -3,6 +3,7 @@ package cn.sux1ng.client.mod.mods.render;
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
 import cn.sux1ng.client.util.RenderState;
+import cn.sux1ng.client.targeting.TargetRules;
 import cn.sux1ng.client.value.BooleanValue;
 import cn.sux1ng.client.value.ColorValue;
 import cn.sux1ng.client.value.NumberValue;
@@ -11,9 +12,6 @@ import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.monster.EntityMob;
-import net.minecraft.entity.passive.EntityAnimal;
-import net.minecraft.entity.player.EntityPlayer;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
@@ -26,9 +24,9 @@ import java.nio.IntBuffer;
 public class TracersMod extends Mod {
     public NumberValue range = new NumberValue("Range", 50, 10, 200, 5);
     public NumberValue lineWidth = new NumberValue("LineWidth", 2.5, 1, 6, 0.5);
-    public BooleanValue players = new BooleanValue("Players", true);
-    public BooleanValue mobs = new BooleanValue("Mobs", false);
-    public BooleanValue animals = new BooleanValue("Animals", false);
+    public BooleanValue players = new BooleanValue("Players", true).setVisibility(() -> !TargetRules.isUnified());
+    public BooleanValue mobs = new BooleanValue("Mobs", false).setVisibility(() -> !TargetRules.isUnified());
+    public BooleanValue animals = new BooleanValue("Animals", false).setVisibility(() -> !TargetRules.isUnified());
     public ColorValue lineColor = new ColorValue("Color", new Color(255, 183, 178));
 
     private final FloatBuffer modelview = BufferUtils.createFloatBuffer(16);
@@ -79,8 +77,6 @@ public class TracersMod extends Mod {
     }
 
     private boolean isValidTarget(Entity entity) {
-        return entity instanceof EntityPlayer && players.getValue()
-                || entity instanceof EntityMob && mobs.getValue()
-                || entity instanceof EntityAnimal && animals.getValue();
+        return TargetRules.canRender(entity, players.getValue(), mobs.getValue(), animals.getValue(), true);
     }
 }

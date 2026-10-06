@@ -23,7 +23,7 @@ public final class ClientLanguage {
             "FastPlace", "快速放置", "TimeChanger", "时间天气", "AutoGG", "自动发送 GG",
             "ArrayList", "功能列表", "InfoHUD", "信息面板", "TargetHUD", "目标面板",
             "ArmorHUD", "装备面板", "Tab", "键盘菜单", "Logo", "标识",
-            "ClickGUI", "功能界面", "Blatant", "高风险模式", "BetterFont", "自定义字体",
+            "ClickGUI", "功能界面", "Blatant", "高风险模式", "Target", "目标筛选", "AntiBot", "机器人过滤", "BetterFont", "自定义字体",
             "Trajectories", "弹道预览", "TNTTimer", "TNT 倒计时", "DamageIndicator", "受击方向");
 
     private static final Map<String, String> VALUES = pairs(
@@ -36,6 +36,9 @@ public final class ClientLanguage {
             "ClickOnly", "仅按住攻击时", "WeaponOnly", "仅手持武器", "MousePriority", "鼠标操作优先",
             "StopOnTarget", "准星命中后停止修正", "IgnoreTeams", "忽略队友",
             "Players", "玩家", "Animals", "动物", "Mobs", "怪物", "Invisibles", "隐身目标",
+            "Friendlies", "友善生物", "TabCheck", "检查玩家列表", "ProfileCheck", "检查档案一致性",
+            "DuplicateCheck", "检查重复身份", "GroundCheck", "要求落地记录", "HideBots", "隐藏疑似机器人",
+            "SpawnDelay", "生成观察时间", "CheckDelay", "识别观察时间",
             "AutoBlock", "自动格挡", "Mode", "模式", "Volume", "音量", "Variation", "音调浮动",
             "CPS", "点击率", "BlockHit", "格挡攻击", "Amount", "补偿强度",
             "KeepSprint", "攻击时保持疾跑", "Style", "样式", "Theme", "主题",

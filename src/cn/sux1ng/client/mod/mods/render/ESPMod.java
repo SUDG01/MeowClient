@@ -3,6 +3,7 @@ package cn.sux1ng.client.mod.mods.render;
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
 import cn.sux1ng.client.util.RenderState;
+import cn.sux1ng.client.targeting.TargetRules;
 import cn.sux1ng.client.value.BooleanValue;
 import cn.sux1ng.client.value.ColorValue;
 import cn.sux1ng.client.value.ModeValue;
@@ -14,7 +15,7 @@ import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.AxisAlignedBB;
 import org.lwjgl.BufferUtils;
@@ -50,12 +51,12 @@ public class ESPMod extends Mod {
 
         try (RenderState state = RenderState.capture()) {
             for (Entity entity : mc.theWorld.loadedEntityList) {
-                if (entity instanceof EntityPlayer && entity != mc.thePlayer && !entity.isDead) {
+                if (TargetRules.canRender(entity, true, false, false, true)) {
                     Color color = entity.isInvisible() ? invisibleColor.getColor() : visibleColor.getColor();
                     if (mode.is("Box3D")) {
-                        renderBox3D((EntityPlayer) entity, color, partialTicks);
+                        renderBox3D((EntityLivingBase) entity, color, partialTicks);
                     } else if (mode.is("2D")) {
-                        renderBox2D((EntityPlayer) entity, color, partialTicks);
+                        renderBox2D((EntityLivingBase) entity, color, partialTicks);
                     }
                 }
             }
@@ -63,7 +64,7 @@ public class ESPMod extends Mod {
     }
 
     // ==================== 3D Box 逻辑 ====================
-    private void renderBox3D(EntityPlayer entity, Color color, float partialTicks) {
+    private void renderBox3D(EntityLivingBase entity, Color color, float partialTicks) {
         RenderManager rm = mc.getRenderManager();
         double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks - rm.renderPosX;
         double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks - rm.renderPosY;
@@ -91,7 +92,7 @@ public class ESPMod extends Mod {
     }
 
     // ==================== 2D Box 逻辑 (CSGO Style) ====================
-    private void renderBox2D(EntityPlayer entity, Color color, float partialTicks) {
+    private void renderBox2D(EntityLivingBase entity, Color color, float partialTicks) {
         RenderManager rm = mc.getRenderManager();
 
         double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks - rm.renderPosX;
@@ -134,11 +135,11 @@ public class ESPMod extends Mod {
     }
 
     // ==================== 装备显示逻辑 ====================
-    private void renderArmor(EntityPlayer entity, float x, float y, float height) {
+    private void renderArmor(EntityLivingBase entity, float x, float y, float height) {
         List<ItemStack> itemsToRender = new ArrayList<>();
 
         for (int i = 3; i >= 0; i--) {
-            ItemStack stack = entity.inventory.armorInventory[i];
+            ItemStack stack = entity.getEquipmentInSlot(i + 1);
             if (stack != null) itemsToRender.add(stack);
         }
         if (entity.getHeldItem() != null) {

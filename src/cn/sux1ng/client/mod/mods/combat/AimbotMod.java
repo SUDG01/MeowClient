@@ -3,6 +3,7 @@ package cn.sux1ng.client.mod.mods.combat;
 import cn.sux1ng.client.MeowClient;
 import cn.sux1ng.client.combat.AimMotion;
 import cn.sux1ng.client.combat.FrameAimMotion;
+import cn.sux1ng.client.targeting.TargetRules;
 import cn.sux1ng.client.events.EventTarget;
 import cn.sux1ng.client.events.impl.CameraEvent;
 import cn.sux1ng.client.mod.Category;
@@ -11,9 +12,6 @@ import cn.sux1ng.client.value.*;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.monster.EntityMob;
-import net.minecraft.entity.passive.EntityAnimal;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemAxe;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
@@ -39,9 +37,9 @@ public final class AimbotMod extends Mod {
     public BooleanValue manualPriority = new BooleanValue("MousePriority", true);
     public BooleanValue stopOnTarget = new BooleanValue("StopOnTarget", true);
     public BooleanValue ignoreTeams = new BooleanValue("IgnoreTeams", true);
-    public BooleanValue players = new BooleanValue("Players", true);
-    public BooleanValue mobs = new BooleanValue("Mobs", false);
-    public BooleanValue animals = new BooleanValue("Animals", false);
+    public BooleanValue players = new BooleanValue("Players", true).setVisibility(() -> !TargetRules.isUnified());
+    public BooleanValue mobs = new BooleanValue("Mobs", false).setVisibility(() -> !TargetRules.isUnified());
+    public BooleanValue animals = new BooleanValue("Animals", false).setVisibility(() -> !TargetRules.isUnified());
 
     private final LongSupplier clock;
     private final FrameAimMotion motion = new FrameAimMotion();
@@ -101,11 +99,9 @@ public final class AimbotMod extends Mod {
         player.setAngles(delta[0] / 0.15f, -delta[1] / 0.15f);
     }
     private boolean valid(EntityLivingBase entity, Vec3 eyes, float partialTicks) {
-        if (entity == null || entity == player || entity.isDead || entity.getHealth() <= 0 || entity.worldObj != world
-                || entity.isInvisible()) return false;
-        boolean type = entity instanceof EntityPlayer && players.getValue() && !((EntityPlayer)entity).isSpectator()
-                || entity instanceof EntityMob && mobs.getValue() || entity instanceof EntityAnimal && animals.getValue();
-        if (!type || ignoreTeams.getValue() && player.isOnSameTeam(entity)) return false;
+        if (entity == null || entity == player || entity.worldObj != world
+                || !TargetRules.canAttack(entity, players.getValue(), mobs.getValue(), animals.getValue(), false)) return false;
+        if (ignoreTeams.getValue() && player.isOnSameTeam(entity)) return false;
         AxisAlignedBB box = box(entity, partialTicks);
         Vec3 nearest = clamp(eyes, box, 0);
         if (eyes.squareDistanceTo(nearest) > range.getValue() * range.getValue()) return false;

@@ -1,6 +1,6 @@
 # MeowClient R7
 
-基于 Minecraft 1.8.9 MCP、使用 Java 8 开发的 PVP 客户端。当前注册 **39 个功能模块**，分为战斗、移动、玩家、视觉、世界、其他、信息与界面八类。
+基于 Minecraft 1.8.9 MCP、使用 Java 8 开发的 PVP 客户端。当前注册 **41 个功能模块**，分为战斗、移动、玩家、视觉、世界、其他、信息与界面八类。
 
 ## 界面与操作
 
@@ -31,13 +31,29 @@ ClickGUI 提供「窗口式」和「面板式」两种布局，共用樱粉、�
 | 玩家 | CustomCape、Animations、Derp、SkinDerp、Twerk |
 | 视觉 | ESP、NameTag、FullBright、Zoom、Tracers、Breadcrumbs、JumpEffect、HitParticles、DamageParticles、Trajectories、TNTTimer、DamageIndicator |
 | 世界 | AutoTool、Eagle、FastPlace、TimeChanger |
-| 其他 | AutoGG、Blatant |
+| 其他 | AutoGG、Blatant、Target、AntiBot |
 | 信息 | ArrayList、InfoHUD、TargetHUD、ArmorHUD、Tab、Logo |
 | 界面 | ClickGUI |
 
 **Blatant 默认关闭。** 它控制 KillAura、Aimbot、AutoClicker、NoClickDelay、Speed、NoSlow、NoJumpDelay、Eagle、FastPlace、AutoTool、Derp、SkinDerp、Twerk 的启用权限。关闭 Blatant 会立即关闭正在运行的上述模块。视觉和 HUD 模块、Sprint、AutoGG 不受此开关影响。
 
 AutoClicker 旧的 “Blatant” 参数现显示为 **BlockHit**；旧配置仍可读取。模块设置保存在 `MeowClient/config/Mod.json`，Chinese 开关与 HUD 布局保存在 `MeowClient/config/Client.json`，路径相对于 Minecraft 数据目录。
+
+## R7 统一目标与 AntiBot
+
+Misc / 其他中的 **Target / 目标筛选** 和 **AntiBot / 机器人过滤** 默认开启，不需要 Blatant。
+
+Target 提供玩家、怪物、友善生物、隐身目标四个开关，默认只选玩家。隐身目标还需要所属类别开启；怪物包括恶魂、史莱姆等，友善生物包括动物、村民、傀儡、蝙蝠和鱿鱼。自己、旁观者和失效世界的实体不会成为目标。
+
+- 开启 Target 后，KillAura、Aimbot、AutoClicker、ESP、NameTag、Tracers、TargetHUD、HitParticles 和 DamageParticles 共用类别筛选。ESP 和姓名标签支持选中的非玩家生物，目标 HUD 也支持 Aimbot 的当前目标。
+- KillAura、Aimbot 与 Tracers 中重复的类别选项会隐藏，原有配置键和值保留；关闭 Target 后恢复各模块原来的类别设置。距离、视角、瞄准条件与 Aimbot 的队伍判断仍在对应模块中设置。
+- KillAura 在 PRE 与 POST 都检查筛选条件，过程中关闭目标类别会停止待执行攻击。AutoClicker 对被排除的准星实体暂停点击，Aimbot 停止跟随被排除的目标。
+
+AntiBot 默认检查 Tab 玩家列表、玩家档案一致性、重复 UUID/名字，并对新生成的玩家等待 **500 ms** 后再允许自动操作。缺少 Tab 信息或存在身份异常的玩家会暂停自动攻击和瞄准；默认观察 **1000 ms** 后隐藏疑似机器人，可单独关闭「隐藏疑似机器人」以保留视觉提示。正常隐身、零延迟与空中玩家不会仅凭这些状态被排除；「要求落地记录」默认关闭，开启后保留曾经落地的记录，并允许创造模式飞行。
+
+识别状态按游戏 tick 更新，实体移除、切换世界、连接变化或关闭模块时会清理。单人世界跳过服务器机器人检查。Tab 信息补齐或档案恢复后可重新选择该玩家。识别参考 [LiquidBounce AntiBot](https://github.com/CCBlueX/LiquidBounce/blob/nextgen/src/main/kotlin/net/ccbluex/liquidbounce/features/module/modules/misc/antibot/modes/CustomAntiBotMode.kt) 的档案、重复身份与地面记录思路，实现适配本项目的 1.8.9 客户端。
+
+AntiBot 依据客户端可见信息判断；服务器若隐藏真实玩家的 Tab 信息，可关闭「检查玩家列表」。完整模拟正常玩家的机器人可能需要调整检查条件，最终效果需在对应服务器测试。
 
 ## R7 战斗事件与操作节奏
 
@@ -130,6 +146,8 @@ OptiFine 或 Minecon 样式需要该玩家实际已有的相应披风；暂未�
 
 R7 视觉回归将弹道预览与原版箭的发射和逐 tick 更新对照，覆盖相机插值与入水减速；在本机 HTTP 服务上验证下载去重、两任务并发上限、缺失/失败缓存、恢复重试和磁盘缓存。`-Render` 调用真实 LayerCape 检查默认图案、本地 PNG/JPG、颜色更新、纹理释放和原版恢复，生成 `meow-cape.png` 预览。
 
+目标回归覆盖各实体类别、隐身组合、新玩家观察、Tab 缺失与恢复、重复身份、可选落地记录、世界重置和配置保存；调用真实 KillAura / Aimbot / AutoClicker 处理流程验证假玩家不会触发自动操作。离屏检查还验证 ESP、姓名标签与追踪线能共同选择及排除友善生物和怪物。
+
 ## 代码入口
 
 | 位置 | 作用 |
@@ -138,6 +156,8 @@ R7 视觉回归将弹道预览与原版箭的发射和逐 tick 更新对照，�
 | `src/cn/sux1ng/client/mod/` | 模块注册、按键模式及 Blatant 启用规则 |
 | `src/cn/sux1ng/client/events/` | 同步事件分发 |
 | `src/cn/sux1ng/client/combat/` | 连续转向及攻击节奏控制 |
+| `src/cn/sux1ng/client/targeting/TargetRules.java` | 自动操作与实体视觉共用的目标筛选入口 |
+| `src/cn/sux1ng/client/mod/mods/misc/AntiBotMod.java` | 玩家身份观察、生成延迟和机器人筛选 |
 | `src/cn/sux1ng/client/gui/` | 两套 ClickGUI、圆形皮肤头像与 ClientSetting |
 | `src/cn/sux1ng/client/ui/` | 主题、人工中文译名与通知 |
 | `src/cn/sux1ng/client/config/` | 模块及客户端设置保存 |

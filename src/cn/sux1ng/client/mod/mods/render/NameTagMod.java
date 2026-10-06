@@ -3,6 +3,7 @@ package cn.sux1ng.client.mod.mods.render;
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
 import cn.sux1ng.client.util.RenderState;
+import cn.sux1ng.client.targeting.TargetRules;
 import cn.sux1ng.client.value.ModeValue;
 import cn.sux1ng.client.value.NumberValue;
 import net.minecraft.client.gui.FontRenderer;
@@ -37,7 +38,7 @@ public class NameTagMod extends Mod {
         if (mc == null || mc.thePlayer == null || mc.theWorld == null) return;
         try (RenderState state = RenderState.capture()) {
             for (Entity entity : mc.theWorld.loadedEntityList) {
-                if (entity instanceof EntityPlayer && entity != mc.thePlayer && !entity.isDead) {
+                if (TargetRules.canRender(entity, true, false, false, true)) {
                     EntityLivingBase livingEntity = (EntityLivingBase) entity;
                     double x = livingEntity.lastTickPosX + (livingEntity.posX - livingEntity.lastTickPosX) * partialTicks - mc.getRenderManager().renderPosX;
                     double y = livingEntity.lastTickPosY + (livingEntity.posY - livingEntity.lastTickPosY) * partialTicks - mc.getRenderManager().renderPosY;

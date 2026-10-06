@@ -38,7 +38,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Java compilation failed.' }
 # Keep Minecraft's logger output in the ignored build directory.
 Push-Location -LiteralPath $taskOutput
 try {
-    foreach ($taskTest in @('R5RegressionTest', 'ClientUiRegressionTest', 'R6FeatureRegressionTest', 'HighPollingInputRegressionTest', 'R7CombatRegressionTest', 'AimbotRegressionTest', 'R7VisualRegressionTest')) {
+    foreach ($taskTest in @('R5RegressionTest', 'ClientUiRegressionTest', 'R6FeatureRegressionTest', 'HighPollingInputRegressionTest', 'R7CombatRegressionTest', 'AimbotRegressionTest', 'R7VisualRegressionTest', 'TargetRegressionTest')) {
         & $taskJava -cp $taskClasspath $taskTest
         if ($LASTEXITCODE -ne 0) { throw "$taskTest failed." }
     }

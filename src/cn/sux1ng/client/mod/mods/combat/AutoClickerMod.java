@@ -6,11 +6,13 @@ import cn.sux1ng.client.value.BooleanValue;
 import cn.sux1ng.client.value.ModeValue;
 import cn.sux1ng.client.value.NumberValue;
 import cn.sux1ng.client.util.TimerUtil;
+import cn.sux1ng.client.targeting.TargetRules;
 import net.minecraft.item.ItemSword;
 import net.minecraft.network.play.client.C07PacketPlayerDigging;
 import net.minecraft.network.play.client.C08PacketPlayerBlockPlacement;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.MovingObjectPosition;
 
 public class AutoClickerMod extends Mod {
 
@@ -41,6 +43,8 @@ public class AutoClickerMod extends Mod {
     @Override
     public void update() {
         if (mc == null || mc.thePlayer == null || mc.theWorld == null || mc.currentScreen != null) return;
+        if (mc.objectMouseOver != null && mc.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.ENTITY
+                && !TargetRules.canAttack(mc.objectMouseOver.entityHit)) { timer.reset(); return; }
         if (cn.sux1ng.client.MeowClient.modManager != null) {
             KillAuraMod aura = cn.sux1ng.client.MeowClient.modManager.getByClass(KillAuraMod.class);
             if (aura != null && aura.isEnable() && aura.getTarget() != null) { timer.reset(); return; }

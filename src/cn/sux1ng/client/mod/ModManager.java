@@ -11,6 +11,8 @@ import cn.sux1ng.client.mod.mods.movement.NoSlowMod;
 import cn.sux1ng.client.mod.mods.movement.SpeedMod;
 import cn.sux1ng.client.mod.mods.movement.SprintMod;
 import cn.sux1ng.client.mod.mods.misc.BlatantMod;
+import cn.sux1ng.client.mod.mods.misc.TargetMod;
+import cn.sux1ng.client.mod.mods.misc.AntiBotMod;
 import cn.sux1ng.client.mod.mods.player.DerpMod;
 import cn.sux1ng.client.mod.mods.player.SkinDerpMod;
 import cn.sux1ng.client.mod.mods.player.TwerkMod;
@@ -119,6 +121,8 @@ public class ModManager {
     public void load(){
         // Restore this permission before any restricted modules during config activation.
         mods.add(new BlatantMod());
+        mods.add(new TargetMod());
+        mods.add(new AntiBotMod());
         mods.add(new LogoMod());
         mods.add(new SprintMod());
         mods.add(new ArrayListMod());
@@ -172,6 +176,8 @@ public class ModManager {
         ka.tagBy(ka.targetMode);  // 在 ArrayList 中显示目标模式
         SpeedMod sp = getByClass(SpeedMod.class);
         sp.tagBy(sp.mode);
+        getByClass(TargetMod.class).setEnable(true);
+        getByClass(AntiBotMod.class).setEnable(true);
         AutoClickerMod ac = getByClass(AutoClickerMod.class);
         ac.tagBy(ac.mode);
     }

@@ -4,6 +4,8 @@ import cn.sux1ng.client.MeowClient;
 import cn.sux1ng.client.mod.Category;
 import cn.sux1ng.client.mod.Mod;
 import cn.sux1ng.client.mod.mods.combat.KillAuraMod;
+import cn.sux1ng.client.mod.mods.combat.AimbotMod;
+import cn.sux1ng.client.targeting.TargetRules;
 import cn.sux1ng.client.ui.ClientLanguage;
 import cn.sux1ng.client.ui.MeowTheme;
 import cn.sux1ng.client.util.DrawUtil;
@@ -31,11 +33,15 @@ public class TargetHUDMod extends Mod {
     }
 
     public EntityLivingBase getDisplayTarget() {
-        KillAuraMod ka = (KillAuraMod) MeowClient.modManager.getByClass(KillAuraMod.class);
+        if (mc == null || mc.thePlayer == null || MeowClient.modManager == null) return null;
+        KillAuraMod ka = MeowClient.modManager.getByClass(KillAuraMod.class);
         EntityLivingBase target = null;
         if (ka != null && ka.isEnable()) {
             target = ka.getTarget();
         }
+        if (target != null && !TargetRules.canRender(target)) target = null;
+        AimbotMod aim = MeowClient.modManager.getByClass(AimbotMod.class);
+        if (target == null && aim != null && aim.isEnable() && TargetRules.canRender(aim.getTarget())) target = aim.getTarget();
         if (target == null && mc.currentScreen != null) {
             target = mc.thePlayer;
         }
