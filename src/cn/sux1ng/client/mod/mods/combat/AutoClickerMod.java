@@ -40,6 +40,11 @@ public class AutoClickerMod extends Mod {
 
     @Override
     public void update() {
+        if (mc == null || mc.thePlayer == null || mc.theWorld == null || mc.currentScreen != null) return;
+        if (cn.sux1ng.client.MeowClient.modManager != null) {
+            KillAuraMod aura = cn.sux1ng.client.MeowClient.modManager.getByClass(KillAuraMod.class);
+            if (aura != null && aura.isEnable() && aura.getTarget() != null) { timer.reset(); return; }
+        }
         // 只有按住左键才工作
         if (mc.gameSettings.keyBindAttack.isKeyDown()) {
 

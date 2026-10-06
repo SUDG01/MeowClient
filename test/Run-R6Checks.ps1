@@ -1,12 +1,13 @@
 param(
     [string]$JdkPath = $env:JAVA_HOME,
     [switch]$Render,
-    [string]$NativePath
+    [string]$NativePath,
+    [string]$BuildDirectory = 'out\r6-checks'
 )
 
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
-$taskOutput = Join-Path $taskRoot 'out\r6-checks'
+$taskOutput = Join-Path $taskRoot $BuildDirectory
 
 if (-not $JdkPath) {
     $taskJavaDirectory = Join-Path $env:ProgramFiles 'Java'
@@ -37,7 +38,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Java compilation failed.' }
 # Keep Minecraft's logger output in the ignored build directory.
 Push-Location -LiteralPath $taskOutput
 try {
-    foreach ($taskTest in @('R5RegressionTest', 'ClientUiRegressionTest', 'R6FeatureRegressionTest', 'HighPollingInputRegressionTest')) {
+    foreach ($taskTest in @('R5RegressionTest', 'ClientUiRegressionTest', 'R6FeatureRegressionTest', 'HighPollingInputRegressionTest', 'R7CombatRegressionTest')) {
         & $taskJava -cp $taskClasspath $taskTest
         if ($LASTEXITCODE -ne 0) { throw "$taskTest failed." }
     }

@@ -30,6 +30,7 @@ public final class ClientLanguage {
             "OnlyWhileAttacking", "仅攻击时", "Target", "目标模式", "Range", "距离",
             "FOV", "视角范围", "MinCPS", "最低点击率", "MaxCPS", "最高点击率",
             "Rotation", "视角调整", "MaxTurnSpeed", "最大转向速度", "Smoothness", "平滑程度",
+            "ReactionDelay", "目标反应延迟", "SwitchDelay", "目标保持时间", "AimVariation", "瞄准位置变化",
             "Players", "玩家", "Animals", "动物", "Mobs", "怪物", "Invisibles", "隐身目标",
             "AutoBlock", "自动格挡", "Mode", "模式", "Volume", "音量", "Variation", "音调浮动",
             "CPS", "点击率", "BlockHit", "格挡攻击", "Amount", "补偿强度",

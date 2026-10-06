@@ -1,4 +1,4 @@
-# MeowClient R6
+# MeowClient R7
 
 基于 Minecraft 1.8.9 MCP、使用 Java 8 开发的 PVP 客户端。当前注册 **38 个功能模块**，分为战斗、移动、玩家、视觉、世界、其他、信息与界面八类。
 
@@ -38,6 +38,24 @@ ClickGUI 提供「窗口式」和「面板式」两种布局，共用樱粉、�
 **Blatant 默认关闭。** 它控制 KillAura、AutoClicker、NoClickDelay、Speed、NoSlow、NoJumpDelay、Eagle、FastPlace、AutoTool、Derp、SkinDerp、Twerk 的启用权限。关闭 Blatant 会立即关闭正在运行的上述模块。视觉和 HUD 模块、Sprint、AutoGG 不受此开关影响。
 
 AutoClicker 旧的 “Blatant” 参数现显示为 **BlockHit**；旧配置仍可读取。模块设置保存在 `MeowClient/config/Mod.json`，Chinese 开关与 HUD 布局保存在 `MeowClient/config/Client.json`，路径相对于 Minecraft 数据目录。
+
+## R7 战斗事件与操作节奏
+
+KillAura 使用 Motion PRE 选择目标并计算转向，等待移动更新提交后在 POST 重新检查目标、距离、遮挡与实际朝向。每个游戏 tick 最多自动攻击一次；重复事件、失效目标、菜单、暂停和世界切换会清理待执行操作。
+
+| 转向模式 | 行为 |
+| --- | --- |
+| Lock / 锁定 | 较快跟随目标，使用加速、减速和转向上限，避免直接跳到目标角度 |
+| Smooth / 平滑 | 逐渐接近瞄准位置，可调整平滑程度；可见镜头由原版帧间插值衔接 |
+| Silent / 静默 | 连续更新移动事件中的朝向，保留上一轮转向状态，镜头由玩家控制 |
+| None / 无 | 保留玩家的手动朝向，只对准星射线实际指向的有效目标攻击 |
+
+- **Single** 保持当前有效目标，直到目标失效；**Switch** 在至少一次攻击且达到目标保持时间后按实体身份轮换，减少距离变化造成的频繁切人。
+- 新增 **目标反应延迟**、**目标保持时间** 和 **瞄准位置变化**。瞄准位置在目标体积内缓慢变化，转向按当前鼠标灵敏度的角度步长计算。
+- 点击间隔在每次攻击后确定并保持，节奏逐渐变化；低帧率或暂停恢复时不会补发积压攻击。手动攻击与自动攻击共享节奏，AutoClicker 在 Aura 已有目标时暂停额外点击。
+- 自动格挡通过原版物品使用流程进入，攻击前解除，后续 tick 再恢复。模块只解除自己发起的格挡，手动使用物品时让出操作。
+
+全新配置默认使用 Smooth、120° 视角范围、45°/tick 转向上限、150 ms 反应延迟、600 ms 目标保持时间和 0.12 瞄准变化。已有配置保留模式及参数名；转向上限的新范围为 5–90°/tick，旧值超过上限时会按范围调整。KillAura 仍需要开启 Blatant。
 
 ## R6 新功能
 
@@ -79,14 +97,14 @@ AutoClicker 旧的 “Blatant” 参数现显示为 **BlockHit**；旧配置仍�
 在仓库根目录的 PowerShell 中运行完整编译与回归检查。脚本优先使用 `JAVA_HOME`，也支持显式指定 JDK 8 路径：
 
 ```powershell
-.\test\Run-R6Checks.ps1
+.\test\Run-R7Checks.ps1
 # 加上离屏 OpenGL 检查（需要 LWJGL natives 与可用显卡驱动，无需启动游戏窗口）
-.\test\Run-R6Checks.ps1 -Render
+.\test\Run-R7Checks.ps1 -Render
 # 如自动查找不到开发环境，可显式指定路径
-.\test\Run-R6Checks.ps1 -JdkPath 'C:\Program Files\Java\jdk1.8.0_202' -Render -NativePath 'jars\versions\1.8.8\1.8.8-natives'
+.\test\Run-R7Checks.ps1 -JdkPath 'C:\Program Files\Java\jdk1.8.0_202' -Render -NativePath 'jars\versions\1.8.8\1.8.8-natives'
 ```
 
-离屏检查覆盖轨迹长度与淡出、跳跃圆环、攻击粒子、追踪线、ESP 投影与深度缓冲、姓名标签、伤害数字、夜视光照及新增功能。画笔入口、HUD 拖动、按键捕获与清除使用真实 GUI 方法检查，新页面与 TNT 倒计时使用真实字体绘制；预览图输出到 `out/r6-checks/render-previews/`。联机环境的最终效果仍需进游戏测试。
+战斗回归使用真实的步行玩家 PRE／移动更新／POST 流程记录发包，覆盖四种转向模式、两种目标模式、攻击顺序、格挡所有权、点击节奏和无效上下文。离屏检查继续覆盖视觉、GUI 与原始鼠标输入；预览图输出到 `out/r7-checks/render-previews/`。联机环境的最终效果仍需进游戏测试。
 
 ## 代码入口
 
@@ -95,6 +113,7 @@ AutoClicker 旧的 “Blatant” 参数现显示为 **BlockHit**；旧配置仍�
 | `src/cn/sux1ng/client/MeowClient.java` | 启动、关闭及管理器初始化 |
 | `src/cn/sux1ng/client/mod/` | 模块注册、按键模式及 Blatant 启用规则 |
 | `src/cn/sux1ng/client/events/` | 同步事件分发 |
+| `src/cn/sux1ng/client/combat/` | 连续转向及攻击节奏控制 |
 | `src/cn/sux1ng/client/gui/` | 两套 ClickGUI、圆形皮肤头像与 ClientSetting |
 | `src/cn/sux1ng/client/ui/` | 主题、人工中文译名与通知 |
 | `src/cn/sux1ng/client/config/` | 模块及客户端设置保存 |
