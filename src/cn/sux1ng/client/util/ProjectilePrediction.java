@@ -41,9 +41,11 @@ public final class ProjectilePrediction {
                 points.add(hit.hitVec);
                 return new Result(points, hit);
             }
+            // Vanilla detects immersion before advancing the projectile for this tick.
+            boolean water = environment.isWater(position);
             position = next;
             points.add(position);
-            double drag = environment.isWater(position) ? (arrow ? 0.6f : 0.8f) : 0.99f;
+            double drag = water ? (arrow ? 0.6f : 0.8f) : 0.99f;
             velocity = new Vec3(velocity.xCoord * drag,
                     velocity.yCoord * drag - (arrow ? 0.05f : 0.03f), velocity.zCoord * drag);
         }

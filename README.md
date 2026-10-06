@@ -70,6 +70,15 @@ KillAura 使用 Motion PRE 选择目标并计算转向，等待移动更新提�
 
 条件触发与目标体积判断参考 [Fusion+ AimAssist](https://github.com/h1meji/fusion-plus/blob/main/fusion-plus/src/base/moduleManager/modules/combat/aimAssist.cpp)，平滑控制与事件接入由本项目实现。参数用于调整操作手感，服务器中的实际表现仍需实测。
 
+## R7 弹道与披风修复
+
+- **Trajectories / 弹道预览**：预览方向与当前画面的帧间角度插值保持一致，避免转向时线条偏离可见瞄准方向；发射偏移、方向归一化与浮点计算对齐原版。入水阻力改为移动前采样，修复提前减速造成的落点偏差。预览保留原版手持发射偏移，实际投射物仍包含随机散布。
+- **CustomCape / 自定义披风**：Meow、OptiFine、Minecon 样式分别参与选择；关闭模块后恢复原版披风。「其他玩家的 OptiFine 披风」只控制其他玩家，不再覆盖自己的 Meow 样式。
+- **Meow** 优先读取游戏数据目录下的 `MeowClient/cape.png`，也支持 `cape.jpg`；没有本地图片时显示内置猫图案。颜色设置调整内置图案的配色。支持原版 64×32 贴图及其倍数，常见的 22×17 披风图会填充到原版 UV 布局。替换纹理会释放旧的 GPU 纹理。
+- **OptiFine** 复用同名玩家的下载与贴图，最多并发两个任务；缺失或失败后等待五分钟再重试，成功图片缓存到 `MeowClient/cache/capes/`。原版皮肤读取不会再反复触发额外披风下载，连接失败只记录简短信息。
+
+OptiFine 或 Minecon 样式需要该玩家实际已有的相应披风；暂未加载到 OptiFine 时显示原版披风。自己的披风可用 F5 查看，并需在原版「皮肤自定义」中开启披风显示。
+
 ## R6 新功能
 
 - **原始鼠标输入**：ClientSetting 中默认开启 RawInput。Windows 使用独立的鼠标原始输入接收与批量读取，保留硬件相对位移，避免系统加速与窗口边界影响视角；灵敏度、反转鼠标和缩放操作继续使用原版设置。失焦或打开菜单时清空待处理位移，切回游戏时不会重放旧输入。后端不可用或收到绝对坐标输入时回退到标准输入。
@@ -103,7 +112,7 @@ KillAura 使用 Motion PRE 选择目标并计算转向，等待移动更新提�
 - 仓库 `lib/` 下的 JAR 依赖
 
 1. 将匹配 R4 的 MCP 源码放入 `src/net/minecraft`。该目录及本地游戏运行目录 `jars/` 被 Git 忽略。
-2. **从干净的 R4 MCP 源码开始**，依次执行 `git apply patches/r5-mcp-hooks.patch`、`git apply patches/r6-mcp-hooks.patch`、`git apply patches/r6-input-hooks.patch` 与 `git apply patches/r7-aim-hooks.patch`。如果已有最新 R6 或初版 R7 的输入钩子，只应用 R7 瞄准补丁。当前开发工作区中的钩子已经应用，无需重复执行。
+2. **从干净的 R4 MCP 源码开始**，依次执行 `git apply patches/r5-mcp-hooks.patch`、`git apply patches/r6-mcp-hooks.patch`、`git apply patches/r6-input-hooks.patch`、`git apply patches/r7-aim-hooks.patch` 与 `git apply patches/r7-visual-hooks.patch`。已有 R7 瞄准钩子的源码只需应用 R7 视觉补丁。当前开发工作区中的钩子已经应用，无需重复执行。
 3. 在 IntelliJ 中把 `src/`、`resources/`、`test/` 分别设为源码、资源、测试源码目录，SDK 设为 JDK 8，并把 `lib/` 的 JAR 加入类路径。
 4. 准备 Minecraft assets 后运行 `test/Start.java`。
 
@@ -118,6 +127,8 @@ KillAura 使用 Motion PRE 选择目标并计算转向，等待移动更新提�
 ```
 
 战斗回归使用真实的步行玩家 PRE／移动更新／POST 流程记录发包，覆盖四种转向模式、两种目标模式、攻击顺序、格挡所有权、点击节奏和无效上下文。瞄准辅助回放覆盖 30、60、144、360、1000 FPS、移动目标插值、鼠标让出、目标保持、条件触发及模块冲突；Windows 下的 `-Render` 还调用真实的 EntityRenderer 帧入口验证鼠标输入与相机事件顺序。离屏检查继续覆盖视觉、GUI 与原始鼠标输入；预览图输出到 `out/r7-checks/render-previews/`。联机环境的最终效果仍需进游戏测试。
+
+R7 视觉回归将弹道预览与原版箭的发射和逐 tick 更新对照，覆盖相机插值与入水减速；在本机 HTTP 服务上验证下载去重、两任务并发上限、缺失/失败缓存、恢复重试和磁盘缓存。`-Render` 调用真实 LayerCape 检查默认图案、本地 PNG/JPG、颜色更新、纹理释放和原版恢复，生成 `meow-cape.png` 预览。
 
 ## 代码入口
 
@@ -134,6 +145,9 @@ KillAura 使用 Motion PRE 选择目标并计算转向，等待移动更新提�
 | `patches/r6-mcp-hooks.patch` | 在 R5 基础上补充攻击、跳跃、夜视及 HUD 布局钩子 |
 | `patches/r6-input-hooks.patch` | 帧开始时获取输入的补充钩子 |
 | `patches/r7-aim-hooks.patch` | 鼠标输入后的逐帧相机事件钩子 |
+| `patches/r7-visual-hooks.patch` | 玩家披风选择、按需获取与披风绘制钩子 |
+| `src/cn/sux1ng/client/util/CapeManager.java` | 披风样式、本地图片与内置图案 |
+| `src/cn/sux1ng/client/util/CapeTexture.java` | 有并发上限、退避与磁盘缓存的披风下载 |
 | `src/cn/sux1ng/client/input/` | 原始鼠标输入、焦点隔离及鼠标事件缓冲 |
 | `src/cn/sux1ng/client/util/RenderState.java` | 视觉效果使用的矩阵与 OpenGL 状态恢复 |
 

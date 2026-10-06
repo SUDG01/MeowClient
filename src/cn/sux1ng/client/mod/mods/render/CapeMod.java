@@ -13,11 +13,11 @@ public class CapeMod extends Mod {
 
     // 披风样式
     public ModeValue capeStyle = new ModeValue("Style", "Meow", new String[]{"Meow", "OptiFine", "Minecon"});
-    // 显示 OptiFine 披风
+    // 是否显示其他玩家的 OptiFine 披风
     public BooleanValue optifine = new BooleanValue("ShowOptiFine", true);
-    // 自定义披风颜色（Meow 样式时生效）
+    // 内置 Meow 披风的颜色；本地图片保留自身颜色
     public ColorValue capeColor = new ColorValue("CapeColor", new Color(255, 105, 180))
-            .setVisibility(() -> capeStyle.is("Meow"));
+            .setVisibility(() -> capeStyle.is("Meow") && CapeManager.localCape == null);
 
     public CapeMod() {
         super("CustomCape", Category.PLAYER);
@@ -26,8 +26,9 @@ public class CapeMod extends Mod {
 
     @Override
     public void enable() {
-        CapeManager.ENABLED = true;
+        update();
         CapeManager.loadLocalCape();
+        CapeManager.ENABLED = true;
     }
 
     @Override
@@ -37,6 +38,8 @@ public class CapeMod extends Mod {
 
     @Override
     public void update() {
-        CapeManager.OPTIFINE_MODE = optifine.getValue();
+        CapeManager.configure(capeStyle.getValue(), optifine.getValue(), capeColor.getColor().getRGB());
     }
+
+    @Override public void render(float partialTicks) { update(); }
 }

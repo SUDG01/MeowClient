@@ -40,14 +40,19 @@ public class TrajectoriesMod extends Mod {
         if (arrow && !mc.thePlayer.isUsingItem() && !idleBow.getValue()) return null;
         double speed = arrow ? ProjectilePrediction.bowSpeed(mc.thePlayer.isUsingItem() ? mc.thePlayer.getItemInUseDuration() : 20) : 1.5;
         if (speed == 0) return null;
-        double yaw = Math.toRadians(mc.thePlayer.rotationYaw);
-        double pitch = Math.toRadians(mc.thePlayer.rotationPitch);
+        // The displayed camera blends tick rotations; use that same heading for the preview.
+        float yaw = (mc.thePlayer.prevRotationYaw + (mc.thePlayer.rotationYaw - mc.thePlayer.prevRotationYaw) * partialTicks) / 180f * (float)Math.PI;
+        float pitch = (mc.thePlayer.prevRotationPitch + (mc.thePlayer.rotationPitch - mc.thePlayer.prevRotationPitch) * partialTicks) / 180f * (float)Math.PI;
         Vec3 start = new Vec3(
-                mc.thePlayer.lastTickPosX + (mc.thePlayer.posX - mc.thePlayer.lastTickPosX) * partialTicks - Math.cos(yaw) * 0.16f,
+                mc.thePlayer.lastTickPosX + (mc.thePlayer.posX - mc.thePlayer.lastTickPosX) * partialTicks - (double)(MathHelper.cos(yaw) * 0.16f),
                 mc.thePlayer.lastTickPosY + (mc.thePlayer.posY - mc.thePlayer.lastTickPosY) * partialTicks + mc.thePlayer.getEyeHeight() - 0.1f,
-                mc.thePlayer.lastTickPosZ + (mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ) * partialTicks - Math.sin(yaw) * 0.16f);
-        Vec3 motion = new Vec3(-Math.sin(yaw) * Math.cos(pitch) * speed,
-                -Math.sin(pitch) * speed, Math.cos(yaw) * Math.cos(pitch) * speed);
+                mc.thePlayer.lastTickPosZ + (mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ) * partialTicks - (double)(MathHelper.sin(yaw) * 0.16f));
+        float scale = arrow ? 1 : 0.4f;
+        Vec3 direction = new Vec3(-MathHelper.sin(yaw) * MathHelper.cos(pitch) * scale,
+                -MathHelper.sin(pitch) * scale, MathHelper.cos(yaw) * MathHelper.cos(pitch) * scale);
+        double multiplier = speed / MathHelper.sqrt_double(direction.xCoord * direction.xCoord
+                + direction.yCoord * direction.yCoord + direction.zCoord * direction.zCoord);
+        Vec3 motion = new Vec3(direction.xCoord * multiplier, direction.yCoord * multiplier, direction.zCoord * multiplier);
         return ProjectilePrediction.simulate(start, motion, arrow, new ProjectilePrediction.Environment() {
             public boolean isLoaded(Vec3 position) { return mc.theWorld.isBlockLoaded(new BlockPos(position)); }
             public boolean isWater(Vec3 position) { return mc.theWorld.getBlockState(new BlockPos(position)).getBlock().getMaterial() == Material.water; }

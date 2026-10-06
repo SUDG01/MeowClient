@@ -1,0 +1,132 @@
+--- a/src/net/minecraft/client/entity/AbstractClientPlayer.java
++++ b/src/net/minecraft/client/entity/AbstractClientPlayer.java
+@@ -74,40 +74,7 @@
+     }
+ 
+     public ResourceLocation getLocationCape() {
+-        // 获取玩家信息
+-        NetworkPlayerInfo info = this.getPlayerInfo();
+-        if (info == null) return null;
+-
+-        // 判断是不是“我自己”
+-        boolean isMe = this.getUniqueID().equals(Minecraft.getMinecraft().thePlayer.getUniqueID());
+-
+-        // ================= 核心逻辑修改 =================
+-
+-        // 1. 如果是【我自己】，完全听从 CapeMod 的开关指挥
+-        if (isMe) {
+-            if (cn.sux1ng.client.util.CapeManager.OPTIFINE_MODE) {
+-                // 【模式 A：OptiFine】
+-                // 尝试获取下载好的 OF 披风
+-                ResourceLocation ofCape = info.getLocationOptifineCape();
+-                if (ofCape != null) return ofCape;
+-            } else {
+-                // 【模式 B：本地】
+-                // 尝试获取本地 cape.png
+-                if (cn.sux1ng.client.util.CapeManager.localCape != null) {
+-                    return cn.sux1ng.client.util.CapeManager.localCape;
+-                }
+-            }
+-        }
+-        // 2. 如果是【别人】，只看 OptiFine 披风 (前提是开关开了)
+-        else {
+-            if (cn.sux1ng.client.util.CapeManager.OPTIFINE_MODE) {
+-                ResourceLocation ofCape = info.getLocationOptifineCape();
+-                if (ofCape != null) return ofCape;
+-            }
+-        }
+-
+-        // 3. 最后兜底：原版披风 (MineCon 等)
+-        return info.getLocationCape();
++        return CapeManager.resolve(this, this.getPlayerInfo());
+     }
+ 
+     public static ThreadDownloadImageData getDownloadImageSkin(ResourceLocation resourceLocationIn, String username)
+--- a/src/net/minecraft/client/network/NetworkPlayerInfo.java
++++ b/src/net/minecraft/client/network/NetworkPlayerInfo.java
+@@ -5,8 +5,6 @@
+ import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+ import com.mojang.authlib.minecraft.MinecraftProfileTexture.Type;
+ import net.minecraft.client.Minecraft;
+-import net.minecraft.client.renderer.IImageBuffer;
+-import net.minecraft.client.renderer.ThreadDownloadImageData;
+ import net.minecraft.client.resources.DefaultPlayerSkin;
+ import net.minecraft.client.resources.SkinManager;
+ import net.minecraft.network.play.server.S38PacketPlayerListItem;
+@@ -14,9 +12,6 @@
+ import net.minecraft.util.IChatComponent;
+ import net.minecraft.util.ResourceLocation;
+ import net.minecraft.world.WorldSettings;
+-
+-import java.awt.image.BufferedImage;
+-import java.util.Locale;
+ 
+ public class NetworkPlayerInfo
+ {
+@@ -116,6 +111,9 @@
+     }
+ 
+     public ResourceLocation getLocationOptifineCape(){
++        if (this.locationOptifineCape == null) {
++            this.locationOptifineCape = cn.sux1ng.client.util.CapeManager.getOptiFineCape(this.gameProfile.getName());
++        }
+         return this.locationOptifineCape;
+     }
+ 
+@@ -155,31 +153,6 @@
+                 }, true);
+             }
+         }
+-        if (this.gameProfile.getName() != null && !this.gameProfile.getName().isEmpty()) {
+-
+-            // 1. 名字处理：转小写 + 加后缀 (防止崩端的关键！)
+-            String playerName = this.gameProfile.getName();
+-            ResourceLocation ofCapeLoc = new ResourceLocation("skins/" + playerName.toLowerCase() + "_of_cape");
+-
+-            // 2. 创建下载任务
+-            ThreadDownloadImageData textureArt = new ThreadDownloadImageData(
+-                    null,
+-                    "http://s.optifine.net/capes/" + playerName + ".png", // 下载地址
+-                    null,
+-                    new IImageBuffer() {
+-                        public BufferedImage parseUserSkin(BufferedImage image) { return image; }
+-
+-                        // 3. 下载成功的回调
+-                        public void skinAvailable() {
+-                            // 下载好了！把披风存进我们的变量里
+-                            NetworkPlayerInfo.this.locationOptifineCape = ofCapeLoc;
+-                        }
+-                    }
+-            );
+-
+-            // 4. 开始下载
+-            Minecraft.getMinecraft().getTextureManager().loadTexture(ofCapeLoc, textureArt);
+-        }
+     }
+ 
+     public void setDisplayName(IChatComponent displayNameIn)
+--- a/src/net/minecraft/client/renderer/entity/layers/LayerCape.java
++++ b/src/net/minecraft/client/renderer/entity/layers/LayerCape.java
+@@ -5,6 +5,7 @@
+ import net.minecraft.client.renderer.entity.RenderPlayer;
+ import net.minecraft.entity.player.EnumPlayerModelParts;
+ import net.minecraft.util.MathHelper;
++import net.minecraft.util.ResourceLocation;
+ 
+ public class LayerCape implements LayerRenderer<AbstractClientPlayer>
+ {
+@@ -17,10 +18,12 @@
+ 
+     public void doRenderLayer(AbstractClientPlayer entitylivingbaseIn, float p_177141_2_, float p_177141_3_, float partialTicks, float p_177141_5_, float p_177141_6_, float p_177141_7_, float scale)
+     {
+-        if (entitylivingbaseIn.hasPlayerInfo() && !entitylivingbaseIn.isInvisible() && entitylivingbaseIn.isWearing(EnumPlayerModelParts.CAPE) && entitylivingbaseIn.getLocationCape() != null)
++        if (!entitylivingbaseIn.isInvisible() && entitylivingbaseIn.isWearing(EnumPlayerModelParts.CAPE))
+         {
++            ResourceLocation cape = entitylivingbaseIn.getLocationCape();
++            if (cape == null) return;
+             GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+-            this.playerRenderer.bindTexture(entitylivingbaseIn.getLocationCape());
++            this.playerRenderer.bindTexture(cape);
+             GlStateManager.pushMatrix();
+             GlStateManager.translate(0.0F, 0.0F, 0.125F);
+             double d0 = entitylivingbaseIn.prevChasingPosX + (entitylivingbaseIn.chasingPosX - entitylivingbaseIn.prevChasingPosX) * (double)partialTicks - (entitylivingbaseIn.prevPosX + (entitylivingbaseIn.posX - entitylivingbaseIn.prevPosX) * (double)partialTicks);

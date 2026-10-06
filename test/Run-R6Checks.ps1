@@ -38,7 +38,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Java compilation failed.' }
 # Keep Minecraft's logger output in the ignored build directory.
 Push-Location -LiteralPath $taskOutput
 try {
-    foreach ($taskTest in @('R5RegressionTest', 'ClientUiRegressionTest', 'R6FeatureRegressionTest', 'HighPollingInputRegressionTest', 'R7CombatRegressionTest', 'AimbotRegressionTest')) {
+    foreach ($taskTest in @('R5RegressionTest', 'ClientUiRegressionTest', 'R6FeatureRegressionTest', 'HighPollingInputRegressionTest', 'R7CombatRegressionTest', 'AimbotRegressionTest', 'R7VisualRegressionTest')) {
         & $taskJava -cp $taskClasspath $taskTest
         if ($LASTEXITCODE -ne 0) { throw "$taskTest failed." }
     }
@@ -46,6 +46,8 @@ try {
         if (-not (Test-Path -LiteralPath $NativePath)) { throw 'LWJGL natives were not found. Supply -NativePath.' }
         & $taskJava ('-Djava.library.path=' + $NativePath) -cp $taskClasspath R6RenderRegressionTest (Join-Path $taskOutput 'render-previews')
         if ($LASTEXITCODE -ne 0) { throw 'R6RenderRegressionTest failed.' }
+        & $taskJava ('-Djava.library.path=' + $NativePath) -cp $taskClasspath R7CapeRenderRegressionTest (Join-Path $taskOutput 'render-previews')
+        if ($LASTEXITCODE -ne 0) { throw 'R7CapeRenderRegressionTest failed.' }
         if ($env:OS -eq 'Windows_NT') {
             & $taskJava ('-Djava.library.path=' + $NativePath) '-Dmeow.test.nativeCamera=true' -cp $taskClasspath AimbotRegressionTest
             if ($LASTEXITCODE -ne 0) { throw 'Native camera event checks failed.' }

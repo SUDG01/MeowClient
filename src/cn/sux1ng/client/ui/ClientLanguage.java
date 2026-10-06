@@ -49,7 +49,7 @@ public final class ClientLanguage {
             "Scale", "缩放", "Rainbow", "彩虹色", "FPS", "FPS", "BPS", "BPS", "XYZ", "XYZ",
             "Time", "时间", "Weather", "天气", "SneakDelay", "潜行延迟",
             "OnlyOnGround", "仅地面", "Message", "消息", "CustomMsg", "自定义消息",
-            "AutoSend", "自动发送", "ShowOptiFine", "显示 OptiFine 披风",
+            "AutoSend", "自动发送", "ShowOptiFine", "其他玩家的 OptiFine 披风",
             "CapeColor", "披风颜色", "Delay", "放置间隔", "Size", "大小",
             "Duration", "持续时间", "VisibleColor", "可见颜色", "InvisibleColor", "遮挡颜色",
             "Armor", "装备", "Gamma", "亮度", "Effect", "效果", "Count", "数量",
