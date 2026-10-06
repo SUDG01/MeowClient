@@ -6,6 +6,7 @@ import cn.sux1ng.client.mod.mods.combat.AimbotMod;
 import cn.sux1ng.client.mod.mods.combat.KillAuraMod;
 import cn.sux1ng.client.mod.mods.combat.NoClickDelayMod;
 import cn.sux1ng.client.mod.mods.misc.BlatantMod;
+import cn.sux1ng.client.mod.mods.misc.DisablerMod;
 import cn.sux1ng.client.mod.mods.movement.NoJumpDelayMod;
 import cn.sux1ng.client.mod.mods.movement.NoSlowMod;
 import cn.sux1ng.client.mod.mods.movement.SpeedMod;
@@ -26,7 +27,7 @@ public final class BlatantPolicy {
     private static final Set<Class<? extends Mod>> RESTRICTED = Collections.unmodifiableSet(
             new HashSet<Class<? extends Mod>>(Arrays.asList(
                     KillAuraMod.class, AimbotMod.class, AutoClickerMod.class, NoClickDelayMod.class,
-                    SpeedMod.class, NoSlowMod.class, NoJumpDelayMod.class,
+                    SpeedMod.class, NoSlowMod.class, NoJumpDelayMod.class, DisablerMod.class,
                     EagleMod.class, FastPlaceMod.class, AutoToolMod.class,
                     DerpMod.class, SkinDerpMod.class, TwerkMod.class)));
 

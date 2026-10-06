@@ -1,6 +1,6 @@
 # MeowClient R7
 
-基于 Minecraft 1.8.9 MCP、使用 Java 8 开发的 PVP 客户端。当前注册 **41 个功能模块**，分为战斗、移动、玩家、视觉、世界、其他、信息与界面八类。
+基于 Minecraft 1.8.9 MCP、使用 Java 8 开发的 PVP 客户端。当前注册 **42 个功能模块**，分为战斗、移动、玩家、视觉、世界、其他、信息与界面八类。
 
 ## 界面与操作
 
@@ -31,13 +31,55 @@ ClickGUI 提供「窗口式」和「面板式」两种布局，共用樱粉、�
 | 玩家 | CustomCape、Animations、Derp、SkinDerp、Twerk |
 | 视觉 | ESP、NameTag、FullBright、Zoom、Tracers、Breadcrumbs、JumpEffect、HitParticles、DamageParticles、Trajectories、TNTTimer、DamageIndicator |
 | 世界 | AutoTool、Eagle、FastPlace、TimeChanger |
-| 其他 | AutoGG、Blatant、Target、AntiBot |
+| 其他 | AutoGG、Blatant、Target、AntiBot、Disabler |
 | 信息 | ArrayList、InfoHUD、TargetHUD、ArmorHUD、Tab、Logo |
 | 界面 | ClickGUI |
 
-**Blatant 默认关闭。** 它控制 KillAura、Aimbot、AutoClicker、NoClickDelay、Speed、NoSlow、NoJumpDelay、Eagle、FastPlace、AutoTool、Derp、SkinDerp、Twerk 的启用权限。关闭 Blatant 会立即关闭正在运行的上述模块。视觉和 HUD 模块、Sprint、AutoGG 不受此开关影响。
+**Blatant 默认关闭。** 它控制 KillAura、Aimbot、AutoClicker、NoClickDelay、Speed、NoSlow、NoJumpDelay、Disabler、Eagle、FastPlace、AutoTool、Derp、SkinDerp、Twerk 的启用权限。关闭 Blatant 会立即关闭正在运行的上述模块。视觉和 HUD 模块、Sprint、AutoGG 不受此开关影响。
 
 AutoClicker 旧的 “Blatant” 参数现显示为 **BlockHit**；旧配置仍可读取。模块设置保存在 `MeowClient/config/Mod.json`，Chinese 开关与 HUD 布局保存在 `MeowClient/config/Client.json`，路径相对于 Minecraft 数据目录。
+
+## R7 移动、物品减速与 Disabler
+
+Speed 使用本次新读取的输入决定跳跃，再由原版执行起跳；按住跳跃键不会叠加一次自动跳跃。水平速度在实际 MoveEvent 中调整，正常加速度不会再次叠加到目标速度上。关闭模块不会重置其他功能的计时器。默认在使用物品、潜行、液体、梯子、飞行、碰墙时暂停；收到回弹后默认暂停 1000 ms，受击速度与爆炸后暂停 500 ms。
+
+| Speed 模式 | 行为 |
+| --- | --- |
+| AutoJump | 按移动输入自动起跳，保留原版水平物理 |
+| Legit | 仅向前疾跑时自动起跳，保留原版水平物理 |
+| Vanilla | 自动跳跃，以「速度」设置控制水平移动量 |
+| Ground | 只在地面调整水平速度，保留玩家的手动跳跃 |
+| Strafe | 根据输入方向重定向现有水平移动，保留手动跳跃 |
+| BHop | 自动连续跳跃，地面增速、空中逐渐调整 |
+| LowHop | 使用可调整的较低起跳高度，适合单人测试与允许该行为的环境 |
+| NCP | 分阶段的跳跃增速，使用已完成移动的实际距离衔接空中阶段 |
+| Grim | 只在地面调整转向及速度，空中保留原版物理 |
+
+「自动疾跑」默认开启，只在向前、食物充足且未使用物品时开始疾跑。Vanilla/Ground 的新配置默认速度为 0.35 格/tick，范围 0.1–2；旧参数名保留，超出新范围的旧值会收敛到范围内。AutoJump 与 Legit 不额外改写水平速度。
+
+NoSlow 在原版物品使用的 0.2 输入乘子处补偿，补偿强度 0 完全保留原版减速，1 恢复完整输入；后续加速度、摩擦与方向处理交给原版。避免了旧实现一边保留慢输入、一边突然放大 motion 的问题。
+
+| NoSlow 模式 | 行为 |
+| --- | --- |
+| Vanilla | 对所选剑格挡、吃喝、拉弓应用输入补偿 |
+| Ground / Air | 分别只在地面或空中补偿 |
+| Adaptive | 地面应用设置强度，空中使用一半补偿强度 |
+| NCP | 剑格挡时在移动 PRE 释放、POST 恢复使用 |
+| SwitchItem | 剑格挡时短暂切换并恢复服务器槽位，POST 恢复使用 |
+| Grim | 剑格挡时短暂缓冲移动与攻击包；周期结束后切换槽位、按原顺序释放包并恢复格挡 |
+
+剑格挡发包策略仅处理剑，不会用相同流程重置吃喝和拉弓计时；在 KillAura 接管物品使用时让出发包。Grim 默认缓冲 150 ms，队列上限 64；服务器修正或强制换槽时丢弃旧移动，并暂停补偿 1000 ms。发包策略可能改变服务器格挡的时机，适配结果需结合实际插件版本测试。
+
+**Disabler / 协议调整** 位于 Misc，默认关闭，需先开启 Blatant：
+
+- **Basic** 清理重复的疾跑、潜行与持物槽位状态，保留实际切换。
+- **Grim** 在有上限的 FIFO 中延迟窗口 0、负序号的确认回应，默认 150 ms；普通物品栏确认和默认心跳直接通过。
+- **NCP** 清理重复状态，合并静止移动报告；保留姿态变化和每 20 tick 一次的静止报告，实际移动与视角包继续发送。
+- **Custom** 自行选择确认/心跳延迟、重复状态、静止报告与方块交互兼容。方块交互兼容默认关闭，用等价的原版方向编码尝试适配相关协议检查。
+
+确认队列默认上限 128，可设 16–256，延迟最多 750 ms；超量、超时、物品栏确认、服务器修正、关闭模块时会释放当前连接的确认包。独立截止计时确保游戏 tick 暂时不运行时也能回应；更换连接时不会把旧确认送进新服务器。服务器位置修正始终接收，不使用积压的位置包覆盖回弹。
+
+参考 [Wurst 跳跃处理](https://github.com/Wurst-Imperium/Wurst7/blob/master/src/main/java/net/wurstclient/hacks/BunnyHopHack.java)、[FDP NoSlow](https://github.com/SkidderMC/FDPClient/blob/main/src/main/java/net/ccbluex/liquidbounce/features/module/modules/movement/NoSlow.kt) 与 [FDP GrimBHop](https://github.com/SkidderMC/FDPClient/blob/main/src/main/java/net/ccbluex/liquidbounce/features/module/modules/movement/speedmodes/grim/GrimBHop.kt) 的输入、物品分组与地面/空中处理思路，事件和队列由本项目实现。Grim/NCP 是行为配置名称，不能保证未知版本的服务器检查免 VL；截图中的 SurvivalFly、NoSlow 和 Simulation 最终需要对应环境验证。建议先对照 AutoJump/Legit 的正常移动，再逐项启用需要测试的策略。
 
 ## R7 统一目标与 AntiBot
 
@@ -128,7 +170,7 @@ OptiFine 或 Minecon 样式需要该玩家实际已有的相应披风；暂未�
 - 仓库 `lib/` 下的 JAR 依赖
 
 1. 将匹配 R4 的 MCP 源码放入 `src/net/minecraft`。该目录及本地游戏运行目录 `jars/` 被 Git 忽略。
-2. **从干净的 R4 MCP 源码开始**，依次执行 `git apply patches/r5-mcp-hooks.patch`、`git apply patches/r6-mcp-hooks.patch`、`git apply patches/r6-input-hooks.patch`、`git apply patches/r7-aim-hooks.patch` 与 `git apply patches/r7-visual-hooks.patch`。已有 R7 瞄准钩子的源码只需应用 R7 视觉补丁。当前开发工作区中的钩子已经应用，无需重复执行。
+2. **从干净的 R4 MCP 源码开始**，依次执行 `git apply patches/r5-mcp-hooks.patch`、`git apply patches/r6-mcp-hooks.patch`、`git apply patches/r6-input-hooks.patch`、`git apply patches/r7-aim-hooks.patch`、`git apply patches/r7-visual-hooks.patch` 与 `git apply patches/r7-movement-hooks.patch`。已有 R7 视觉钩子的源码只需应用 R7 移动补丁。当前开发工作区中的钩子已经应用，无需重复执行。
 3. 在 IntelliJ 中把 `src/`、`resources/`、`test/` 分别设为源码、资源、测试源码目录，SDK 设为 JDK 8，并把 `lib/` 的 JAR 加入类路径。
 4. 准备 Minecraft assets 后运行 `test/Start.java`。
 
@@ -148,6 +190,8 @@ R7 视觉回归将弹道预览与原版箭的发射和逐 tick 更新对照，�
 
 目标回归覆盖各实体类别、隐身组合、新玩家观察、Tab 缺失与恢复、重复身份、可选落地记录、世界重置和配置保存；调用真实 KillAura / Aimbot / AutoClicker 处理流程验证假玩家不会触发自动操作。离屏检查还验证 ESP、姓名标签与追踪线能共同选择及排除友善生物和怪物。
 
+移动回归通过真实 onLivingUpdate、物品使用乘子与碰撞物理重放，验证跳跃不叠加、各模式和补偿强度、转向以及回弹恢复。发包回归覆盖物品 PRE/POST 顺序、队列容量、独立超时、界面确认、回弹与连接切换，实际调用 NetworkManager 验证取消和释放。测试不等于实服反作弊绕过验证。
+
 ## 代码入口
 
 | 位置 | 作用 |
@@ -166,6 +210,8 @@ R7 视觉回归将弹道预览与原版箭的发射和逐 tick 更新对照，�
 | `patches/r6-input-hooks.patch` | 帧开始时获取输入的补充钩子 |
 | `patches/r7-aim-hooks.patch` | 鼠标输入后的逐帧相机事件钩子 |
 | `patches/r7-visual-hooks.patch` | 玩家披风选择、按需获取与披风绘制钩子 |
+| `patches/r7-movement-hooks.patch` | 新读取的移动输入与物品使用减速事件 |
+| `src/cn/sux1ng/client/movement/` | 移动方向、队列与发包重放控制 |
 | `src/cn/sux1ng/client/util/CapeManager.java` | 披风样式、本地图片与内置图案 |
 | `src/cn/sux1ng/client/util/CapeTexture.java` | 有并发上限、退避与磁盘缓存的披风下载 |
 | `src/cn/sux1ng/client/input/` | 原始鼠标输入、焦点隔离及鼠标事件缓冲 |

@@ -23,7 +23,7 @@ public final class ClientLanguage {
             "FastPlace", "快速放置", "TimeChanger", "时间天气", "AutoGG", "自动发送 GG",
             "ArrayList", "功能列表", "InfoHUD", "信息面板", "TargetHUD", "目标面板",
             "ArmorHUD", "装备面板", "Tab", "键盘菜单", "Logo", "标识",
-            "ClickGUI", "功能界面", "Blatant", "高风险模式", "Target", "目标筛选", "AntiBot", "机器人过滤", "BetterFont", "自定义字体",
+            "ClickGUI", "功能界面", "Blatant", "高风险模式", "Target", "目标筛选", "AntiBot", "机器人过滤", "Disabler", "协议调整", "BetterFont", "自定义字体",
             "Trajectories", "弹道预览", "TNTTimer", "TNT 倒计时", "DamageIndicator", "受击方向");
 
     private static final Map<String, String> VALUES = pairs(
@@ -39,6 +39,12 @@ public final class ClientLanguage {
             "Friendlies", "友善生物", "TabCheck", "检查玩家列表", "ProfileCheck", "检查档案一致性",
             "DuplicateCheck", "检查重复身份", "GroundCheck", "要求落地记录", "HideBots", "隐藏疑似机器人",
             "SpawnDelay", "生成观察时间", "CheckDelay", "识别观察时间",
+            "Boost", "起跳增速倍率", "JumpHeight", "起跳高度", "AutoSprint", "自动疾跑",
+            "PauseUsingItem", "使用物品时暂停", "PauseOnCorrection", "回弹后暂停", "RecoveryTime", "恢复等待时间",
+            "Swords", "剑格挡", "Consume", "吃喝物品", "Bows", "拉弓", "PulseDelay", "缓冲周期",
+            "PacketDelay", "回应延迟", "QueueLimit", "队列上限", "DelayTransactions", "延迟确认回应",
+            "DelayKeepAlive", "延迟心跳回应", "Deduplicate", "清理重复状态", "IdlePackets", "减少静止移动包",
+            "GrimPlace", "方块交互兼容",
             "AutoBlock", "自动格挡", "Mode", "模式", "Volume", "音量", "Variation", "音调浮动",
             "CPS", "点击率", "BlockHit", "格挡攻击", "Amount", "补偿强度",
             "KeepSprint", "攻击时保持疾跑", "Style", "样式", "Theme", "主题",
@@ -66,7 +72,9 @@ public final class ClientLanguage {
             "Single", "单目标", "Switch", "切换目标", "Lock", "锁定", "Smooth", "平滑",
             "Silent", "静默", "None", "无", "Normal", "标准", "Jitter", "抖动",
             "Double", "双击", "Fixed", "固定", "Legit", "自然", "Vanilla", "原版",
-            "NCP", "NCP", "AutoJump", "自动跳跃", "Omni", "全向",
+            "NCP", "NCP", "Grim", "Grim", "Basic", "基础", "AutoJump", "自动跳跃", "Omni", "全向",
+            "Ground", "地面", "Air", "空中", "Strafe", "转向跟随", "BHop", "连续跳跃", "LowHop", "低跳",
+            "Adaptive", "自适应", "SwitchItem", "切换物品",
             "Dropdown", "面板式", "CSGO", "窗口式", "MeowClient", "MeowClient",
             "Skeet", "简洁", "Light", "浅色", "Rainbow", "彩虹", "Astolfo", "柔彩",
             "Pulse", "呼吸", "Static", "固定", "Spin", "旋转", "Backward", "反向",

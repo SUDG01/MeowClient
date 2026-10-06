@@ -240,7 +240,7 @@ public class R5RegressionTest {
             BlatantMod blatant = manager.getByClass(BlatantMod.class);
             require(blatant != null && blatant.getCategory() == Category.MISC && !blatant.isEnable(),
                     "Blatant should start disabled in Misc");
-            String[] restricted = {"KillAura", "Aimbot", "AutoClicker", "NoClickDelay", "Speed", "NoSlow",
+            String[] restricted = {"KillAura", "Aimbot", "AutoClicker", "NoClickDelay", "Speed", "NoSlow", "Disabler",
                     "NoJumpDelay", "Eagle", "FastPlace", "AutoTool", "Derp", "SkinDerp", "Twerk"};
             for (String name : restricted) {
                 Mod mod = manager.getByName(name);

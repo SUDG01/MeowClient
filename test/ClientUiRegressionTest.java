@@ -27,7 +27,7 @@ public class ClientUiRegressionTest {
             require(!ClientLanguage.category(category).equals(category.name()), "category: " + category);
         }
         Set<String> technical = new HashSet<>(Arrays.asList("X", "Y", "Z", "FPS", "BPS", "XYZ"));
-        Set<String> properOptions = new HashSet<>(Arrays.asList("NCP", "OptiFine", "Minecon", "1.7", "2D"));
+        Set<String> properOptions = new HashSet<>(Arrays.asList("NCP", "Grim", "OptiFine", "Minecon", "1.7", "2D"));
         for (Mod mod : manager.getMods()) {
             require(!ClientLanguage.module(mod).equals(mod.getName()), "module: " + mod.getName());
             for (Value<?> value : mod.getValues()) {

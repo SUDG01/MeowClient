@@ -13,6 +13,7 @@ import cn.sux1ng.client.mod.mods.movement.SprintMod;
 import cn.sux1ng.client.mod.mods.misc.BlatantMod;
 import cn.sux1ng.client.mod.mods.misc.TargetMod;
 import cn.sux1ng.client.mod.mods.misc.AntiBotMod;
+import cn.sux1ng.client.mod.mods.misc.DisablerMod;
 import cn.sux1ng.client.mod.mods.player.DerpMod;
 import cn.sux1ng.client.mod.mods.player.SkinDerpMod;
 import cn.sux1ng.client.mod.mods.player.TwerkMod;
@@ -123,6 +124,7 @@ public class ModManager {
         mods.add(new BlatantMod());
         mods.add(new TargetMod());
         mods.add(new AntiBotMod());
+        mods.add(new DisablerMod());
         mods.add(new LogoMod());
         mods.add(new SprintMod());
         mods.add(new ArrayListMod());

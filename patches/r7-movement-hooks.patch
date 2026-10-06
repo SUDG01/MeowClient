@@ -1,0 +1,21 @@
+--- a/src/net/minecraft/client/entity/EntityPlayerSP.java
++++ b/src/net/minecraft/client/entity/EntityPlayerSP.java
+@@ -839,13 +839,16 @@
+         boolean flag1 = this.movementInput.sneak;
+         float f = 0.8F;
+         boolean flag2 = this.movementInput.moveForward >= f;
+         this.movementInput.updatePlayerMoveState();
++        cn.sux1ng.client.events.EventManager.call(new cn.sux1ng.client.events.impl.MovementInputEvent(this, this.movementInput));
+ 
+         if (this.isUsingItem() && !this.isRiding())
+         {
+-            this.movementInput.moveStrafe *= 0.2F;
+-            this.movementInput.moveForward *= 0.2F;
++            cn.sux1ng.client.events.impl.ItemSlowdownEvent slowdown = new cn.sux1ng.client.events.impl.ItemSlowdownEvent(this);
++            cn.sux1ng.client.events.EventManager.call(slowdown);
++            this.movementInput.moveStrafe *= Float.isFinite(slowdown.strafe) ? net.minecraft.util.MathHelper.clamp_float(slowdown.strafe, 0.0F, 1.0F) : 0.2F;
++            this.movementInput.moveForward *= Float.isFinite(slowdown.forward) ? net.minecraft.util.MathHelper.clamp_float(slowdown.forward, 0.0F, 1.0F) : 0.2F;
+             this.sprintToggleTimer = 0;
+         }
+ 
+         this.pushOutOfBlocks(this.posX - (double)this.width * 0.35D, this.getEntityBoundingBox().minY + 0.5D, this.posZ + (double)this.width * 0.35D);
